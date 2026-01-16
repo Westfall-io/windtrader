@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.24.2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "windtrader"
+version = "0.1.0"
+description = "SysMLv2 validation wrapper with version compatibility checks (bundled Java validator jars)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Westfall-io" }]
+dependencies = []
+
+[project.scripts]
+windtrader = "windtrader.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/windtrader"]
+
+# Include bundled jars + manifest in the wheel
+[tool.hatch.build]
+include = [
+  "src/windtrader/validators/manifest.json",
+  "src/windtrader/validators/*.jar",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
