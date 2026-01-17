@@ -1,27 +1,42 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
   release:
+    name: Publish release
     runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (tested SHA)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha }}
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - run: pip install -e ".[dev]"
+      - name: Install package + release tooling
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e ".[dev]"
+          python -m pip install "python-semantic-release>=9"
 
-      - name: Semantic Release
+      - name: semantic-release publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: semantic-release publish
+          # python-semantic-release uses GH_TOKEN (preferred).
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          semantic-release publish
