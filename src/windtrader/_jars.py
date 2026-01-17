@@ -62,9 +62,7 @@ def _candidate_urls(version: str) -> list[str]:
         f"https://github.com/{repo}/releases/download/{version}/windtrader-java-{version}.jar"
     )
     # Fallback: latest/download with versioned filename (works if GitHub exposes that asset)
-    urls.append(
-        f"https://github.com/{repo}/releases/latest/download/windtrader-java-{version}.jar"
-    )
+    urls.append(f"https://github.com/{repo}/releases/latest/download/windtrader-java-{version}.jar")
 
     return urls
 
@@ -77,7 +75,7 @@ def get_jar_path(version: str) -> Path:
     """
     version = (version or "").strip() or DEFAULT_VERSION
     dest = _jar_cache_path(version)
-    
+
     if dest.exists() and dest.stat().st_size > 0:
         return dest
 

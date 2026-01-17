@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Sequence
 
 import subprocess
 import time
@@ -9,6 +9,7 @@ import time
 from ._jars import get_jar_path
 
 DEFAULT_VERSION = "0.1.1"
+
 
 @dataclass(frozen=True)
 class ValidationResult:
@@ -87,12 +88,14 @@ class WindtraderValidator:
             jar_path=str(jar),
             duration_s=(t1 - t0),
         )
-    
+
     def validate(self, text: str, timeout_s: float = 10.0) -> ValidationResult:
         return self.validate_text(text, timeout_s=timeout_s)
 
 
-def validate(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0) -> ValidationResult:
+def validate(
+    text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0
+) -> ValidationResult:
     return WindtraderValidator(version=version).validate_text(text, timeout_s=timeout_s)
 
 

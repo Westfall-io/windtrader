@@ -15,7 +15,7 @@ class ValidationError:
 @dataclass(frozen=True)
 class ValidationResult:
     ok: bool
-    jar_label: str                # e.g., "latest" or "0.56.0-..."
+    jar_label: str  # e.g., "latest" or "0.56.0-..."
     jar_path: str
     exit_code: int
     errors: list[ValidationError]
