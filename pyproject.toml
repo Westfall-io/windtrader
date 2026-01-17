@@ -15,35 +15,73 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=7.4",
-  "ruff>=0.5",
+  "ruff>=0.6",
+  "pytest>=8",
+  "python-semantic-release>=10.0.0",
+  "pre-commit>=3.7",
+  "pytest-cov>=5.0",
+  "coverage[toml]>=7.6",
+  "interrogate>=1.7",
 ]
 
+[tool.coverage.run]
+branch = true
+source = ["windseeker"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+omit = [
+  "tests/*",
+]
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
 [project.scripts]
-windtrader = "windtrader.cli:main"
+windseeker = "windseeker.cli:main"
 
-[tool.hatch.build]
-packages = ["src/windtrader"]
+# -------------------------
+# setuptools package config
+# -------------------------
+[tool.setuptools]
+include-package-data = true
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["windseeker*"]
 
+# -------------------------
+# ruff (format + lint)
+# -------------------------
 [tool.ruff]
 line-length = 100
-target-version = "py310"
 
+[tool.ruff.format]
+quote-style = "double"
+
+# -------------------------
+# Python Semantic Release
+# -------------------------
 [tool.semantic_release]
-tag_format = "v{version}"
 allow_zero_version = true
 version_toml = ["pyproject.toml:project.version"]
-
-# Use the gitmoji-style parser
+changelog_file = "CHANGELOG.md"
+assets = ["pyproject.toml", "CHANGELOG.md"]
 commit_parser = "emoji"
 
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
 [tool.semantic_release.commit_parser_options]
-# Support BOTH gitmoji colon-codes and unicode emoji in commit subjects
-major_tags = [":boom:", "💥"]
-minor_tags = [":sparkles:", "✨"]
-patch_tags = [":bug:", ":ambulance:", ":lock:", ":zap:", "🐛", "🚑", "🔒", "⚡"]
-other_allowed_tags = [":memo:", ":white_check_mark:", ":construction:", ":recycle:", "📝", "✅", "🚧", "♻️"]
+major_tags = [":boom:"]
+minor_tags = [":sparkles:"]
+patch_tags = [":bug:", ":ambulance:"]
+other_allowed_tags = [
+  ":memo:",
+  ":white_check_mark:",
+  ":art:",
+  ":wrench:",
+  ":package:"
+]

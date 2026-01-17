@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Semantic Release + Build
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history for tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install build
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Decide whether a release is needed (i.e., whether semantic-release would bump)
+      - name: Decide whether a release is needed
+        id: relcheck
+        run: |
+          LAST="$(semantic-release version --print-last-released || true)"
+          NEXT="$(semantic-release version --print || true)"
+
+          echo "last=$LAST" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$LAST" ] && [ "$LAST" = "$NEXT" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "No version bump required (LAST == NEXT == $LAST)."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Release needed (LAST=$LAST, NEXT=$NEXT)."
+          fi
+
+      # 1) Determine next version + update pyproject.toml + CHANGELOG.md
+      # 2) Commit those changes + create the tag
+      - name: Semantic Release (version)
+        if: steps.relcheck.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release version
+
+      # Build AFTER version bump so the dist uses the new version
+      - name: Build sdist and wheel
+        if: steps.relcheck.outputs.release == 'true'
+        run: python -m build
+
+      - name: Upload dist artifacts
+        if: steps.relcheck.outputs.release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+      # Create GitHub release / upload release notes, etc.
+      - name: Semantic Release (publish)
+        if: steps.relcheck.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release publish
+
+      - name: No release needed
+        if: steps.relcheck.outputs.release != 'true'
+        run: echo "Skipping release/build/publish because no version bump was required."
