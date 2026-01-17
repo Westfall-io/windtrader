@@ -1,19 +1,15 @@
-from .api import (
-    CompatibilityReport,
-    available_versions,
-    latest_version,
+from .validator import (
+    ValidationResult,
+    WindtraderValidator,
     validate,
-    validate_latest,
-    validate_with_compat,
-    compatibility_report,
+    validate_across_versions,
 )
 
 __all__ = [
-    "CompatibilityReport",
-    "available_versions",
-    "latest_version",
+    "ValidationResult",
+    "WindtraderValidator",
     "validate",
-    "validate_latest",
-    "validate_with_compat",
-    "compatibility_report",
+    "validate_across_versions",
 ]
+
+__version__ = "0.1.0"
