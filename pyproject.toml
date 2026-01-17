@@ -32,3 +32,18 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.semantic_release]
+tag_format = "v{version}"
+allow_zero_version = true
+version_toml = ["pyproject.toml:project.version"]
+
+# Use the gitmoji-style parser
+commit_parser = "emoji"
+
+[tool.semantic_release.commit_parser_options]
+# Support BOTH gitmoji colon-codes and unicode emoji in commit subjects
+major_tags = [":boom:", "💥"]
+minor_tags = [":sparkles:", "✨"]
+patch_tags = [":bug:", ":ambulance:", ":lock:", ":zap:", "🐛", "🚑", "🔒", "⚡"]
+other_allowed_tags = [":memo:", ":white_check_mark:", ":construction:", ":recycle:", "📝", "✅", "🚧", "♻️"]
