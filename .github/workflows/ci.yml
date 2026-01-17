@@ -18,6 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Java (Temurin 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -54,6 +60,5 @@ jobs:
 
       - name: Publish release
         env:
-          # python-semantic-release defaults remote.token to GH_TOKEN for GitHub
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: semantic-release publish
