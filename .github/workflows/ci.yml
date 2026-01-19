@@ -17,6 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ✅ Fix for "LinkageError / class file version" issues:
+      # Your jar is built for Java 21, so CI must run Java 21.
+      - name: Set up Java (Temurin 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -27,6 +35,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+          # Ensure these exist even if not in your dev extras yet
+          pip install pytest-cov interrogate
 
       - name: Ruff format (check)
         run: ruff format --check .
@@ -36,8 +46,7 @@ jobs:
 
       - name: Run tests (with coverage)
         run: |
-          pip install -e ".[dev]"
-          pytest
+          pytest --cov=windtrader --cov-report=xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -49,5 +58,4 @@ jobs:
 
       - name: Docstring coverage (interrogate)
         run: |
-          pip install -e ".[dev]"
-          interrogate -v windseeker --fail-under 50
+          interrogate -v windtrader --fail-under 50
