@@ -57,5 +57,4 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Docstring coverage (interrogate)
-        run: |
-          interrogate -v windtrader --fail-under 50
+        run: interrogate -v src/windtrader --fail-under 50
