@@ -1,18 +1,31 @@
-# Windtrader
+# windtrader
 
-**Windtrader** is a lightweight Python wrapper around **windtrader-java**, providing fast, parse-only validation for **SysML v2** models.
+**windtrader** is a lightweight Python wrapper around the `windtrader-java` SysML v2 validator.
+It provides a simple, scriptable way to validate SysML v2 textual syntax from Python while
+delegating all grammar authority to the official Java-based validator.
 
-The Python package does **not** reimplement the language. Instead, it delegates validation to a versioned Java JAR published via GitHub Releases, downloads it on demand, and caches it locally.
+This project is intentionally *parse-only*: it validates syntax, reports diagnostics, and
+(optionally) echoes parsed output, but does **not** perform semantic resolution or model linking.
 
 ---
 
-## Features
+## Status
 
-* ✅ Parse-only SysML v2 validation
-* 🚀 Thin Python API over a stable Java engine
-* 📦 Automatic JAR download + local caching
-* 🔁 Version-pinned Java backend per invocation
-* 🧪 Designed for CI, linters, and pre-commit checks
+![CI](https://github.com/Westfall-io/windtrader/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://codecov.io/gh/Westfall-io/windtrader/branch/main/graph/badge.svg)
+![Docstrings](https://img.shields.io/badge/docstrings-interrogate-success)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/github/license/Westfall-io/windtrader)
+
+---
+
+## Key Features
+
+- ✅ Validates SysML v2 textual syntax using a pinned Java validator
+- 🧩 Thin, explicit Python API (no hidden model interpretation)
+- 📦 Automatic download and caching of the validator JAR
+- 🧪 Designed for CI, generators, and downstream tooling
+- 🔐 Stable exit-code contract from Java → Python
 
 ---
 
@@ -22,138 +35,131 @@ The Python package does **not** reimplement the language. Instead, it delegates 
 pip install windtrader
 ```
 
-For development:
+Or for development:
 
 ```bash
 pip install -e ".[dev]"
 ```
 
+Java **must** be available on your system (CI uses Temurin JDK).
+
 ---
 
 ## Command-Line Usage
-
-Windtrader reads SysML text from **stdin** and exits with the same status code as the Java validator.
 
 ```bash
 echo "part { attribute mass; }" | windtrader
 ```
 
-### Options
+Options:
 
 ```text
---version   windtrader-java version to use (default: 0.1.1)
---timeout   timeout in seconds (default: 10.0)
+--version            Show windtrader package version
+--java-version       windtrader-java version to use (default: 0.1.1)
+--timeout            Validation timeout in seconds
 ```
 
-Example:
-
-```bash
-echo "part { attrib mass; }" | windtrader --version 0.1.1
-```
-
-Exit codes:
-
-| Code | Meaning              |
-| ---: | -------------------- |
-|    0 | Valid SysML          |
-|    2 | Invalid syntax       |
-|   3+ | Runtime / tool error |
+The CLI forwards stdout/stderr directly from the Java tool and exits with the same exit code.
 
 ---
 
 ## Python API
 
+### Basic validation
+
+```python
+from windtrader import validate
+
+result = validate("part { attribute mass; }")
+
+if result.ok:
+    print("Valid SysML")
+else:
+    print("Invalid:", result.stderr)
+```
+
+### Validator object
+
 ```python
 from windtrader.validator import WindtraderValidator
 
 v = WindtraderValidator(version="0.1.1")
-res = v.validate_text("part { attribute mass; }")
+res = v.validate("part { attrib mass; }")
 
-if res.ok:
-    print("Valid SysML")
-else:
-    print("Invalid SysML")
-    print(res.stderr)
+print(res.exit_code)   # 0 = valid, 2 = syntax error, 3 = runtime error
 ```
 
-### `ValidationResult`
+### ValidationResult
 
-Returned from all validation calls:
+Returned objects include:
 
-```python
-ValidationResult(
-    ok: bool,
-    version: str,
-    exit_code: int,
-    stdout: str,
-    stderr: str,
-    jar_path: str,
-    duration_s: float,
-)
-```
-
-Convenience properties:
-
-* `is_invalid_syntax`
-* `is_runtime_error`
+- `ok`: boolean success flag
+- `exit_code`: Java exit code
+- `stdout` / `stderr`: raw tool output
+- `jar_path`: cached JAR location
+- `duration_s`: execution time
+- `is_invalid_syntax`
+- `is_runtime_error`
 
 ---
 
-## JAR Download & Caching
+## Exit Code Contract
 
-Downloaded JARs are cached locally:
+The Java validator defines:
 
-```text
-~/.cache/windtrader/jars/
-```
+| Exit Code | Meaning            |
+|----------:|--------------------|
+| 0         | Valid syntax       |
+| 2         | Invalid SysML      |
+| 3         | Runtime error      |
 
-You may override this location:
-
-```bash
-export WINDTRADER_CACHE_DIR=/path/to/cache
-```
-
-To force a fresh download:
-
-```bash
-rm -rf ~/.cache/windtrader/jars
-```
+Python preserves these codes exactly.
 
 ---
 
-## Environment Variables
+## Configuration
 
-| Variable                       | Purpose                                |
-| ------------------------------ | -------------------------------------- |
-| `WINDTRADER_JAVA_REPO`         | Override GitHub repo for JAR downloads |
-| `WINDTRADER_CACHE_DIR`         | Override cache directory               |
-| `WINDTRADER_JAVA_STABLE_ASSET` | Optional fixed asset URL               |
+Environment variables:
+
+- `WINDTRADER_CACHE_DIR` – override JAR cache directory
+- `WINDTRADER_JAVA_REPO` – override GitHub repo for JAR downloads
+- `WINDTRADER_JAVA_STABLE_ASSET` – explicit asset URL (optional)
 
 ---
 
-## Development
+## Design Philosophy
 
-```bash
-pytest
-ruff check src/
-```
+- **Grammar is authoritative**: validation truth lives in Java
+- **Python is orchestration only**
+- **No silent fallbacks**
+- **Reproducible CI behavior**
 
-The Python package intentionally **does not** modify or manage Maven, Java versions, or semantic-release state. All Java versioning is handled by `windtrader-java` releases.
+This makes `windtrader` suitable as a foundation for:
+
+- Code generators
+- Corpus analysis
+- Model-building libraries
+- CI validation gates
+
+---
+
+## Relationship to Other Projects
+
+`windtrader` is designed to act as the validation backbone for higher-level SysML tooling,
+including programmatic builders and corpus-driven API generation pipelines.
 
 ---
 
 ## License
 
-MIT License. See `LICENSE` for details.
+MIT License. See [LICENSE](LICENSE).
 
 ---
 
-## Project Status
+## Contributing
 
-This project is intentionally minimal and strict in scope. It exists to provide:
+Pull requests welcome. Please ensure:
 
-* Deterministic SysML parsing
-* Clear failure modes
-* Stable CI integration
-
-Feature requests that require semantic interpretation should be implemented upstream in **windtrader-java**.
+- CI passes
+- Docstring coverage remains high
+- Validator version bumps are intentional
