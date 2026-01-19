@@ -75,13 +75,13 @@ match = "main"
 prerelease = false
 
 [tool.semantic_release.commit_parser_options]
-major_tags = [":boom:"]
-minor_tags = [":sparkles:"]
-patch_tags = [":bug:", ":ambulance:"]
+major_tags = ["💥", ":boom:"]
+minor_tags = ["✨", ":sparkles:"]
+patch_tags = ["🐛", "🚑", "🚑️", ":bug:", ":ambulance:"]
 other_allowed_tags = [
-  ":memo:",
-  ":white_check_mark:",
-  ":art:",
-  ":wrench:",
-  ":package:"
+  "📝", ":memo:",
+  "✅", ":white_check_mark:",
+  "🎨", ":art:",
+  "🔧", ":wrench:",
+  "📦", ":package:"
 ]
