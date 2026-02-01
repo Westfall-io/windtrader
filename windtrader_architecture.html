@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windtrader System Architecture</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        h3 {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin: 25px 0 15px 0;
+        }
+        
+        .sysml-code {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        
+        .diagram-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .component-box {
+            border: 2px solid #667eea;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #f0f4ff;
+        }
+        
+        .component-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .deployment-node {
+            background: white;
+            border: 2px solid #764ba2;
+            padding: 20px;
+            margin: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .deployment-node h4 {
+            color: #764ba2;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        .nav {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            display: inline-block;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌬️ Windtrader System Architecture</h1>
+            <p class="subtitle">Python Wrapper for SysML v2 Validation</p>
+        </header>
+        
+        <nav class="nav">
+            <a href="#overview">Overview</a>
+            <a href="#sysml">SysML v2 Model</a>
+            <a href="#physical">Physical Architecture</a>
+            <a href="#functional">Functional Architecture</a>
+            <a href="#deployment">Deployment Design</a>
+        </nav>
+
+        <!-- OVERVIEW SECTION -->
+        <section id="overview" class="section">
+            <h2>📋 System Overview</h2>
+            <p><strong>Windtrader</strong> is a lightweight Python wrapper around the <code>windtrader-java</code> validator, providing seamless SysML v2 textual syntax validation through a simple API and CLI interface.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎯 Core Purpose</h4>
+                    <p>Parse-only validation of SysML v2 textual documents using a pinned Java validator JAR</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔧 Key Features</h4>
+                    <p>JAR caching, version management, subprocess orchestration, and structured result types</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚀 Deployment</h4>
+                    <p>Standalone library, CLI tool, or CI/CD pipeline integration</p>
+                </div>
+            </div>
+
+            <h3>System Capabilities</h3>
+            <table>
+                <tr>
+                    <th>Capability</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>Syntax Validation</td>
+                    <td>Validate SysML v2 textual syntax against language grammar</td>
+                </tr>
+                <tr>
+                    <td>JAR Management</td>
+                    <td>Automatic download, caching, and version resolution of validator JARs</td>
+                </tr>
+                <tr>
+                    <td>Multi-Version Support</td>
+                    <td>Test the same input across multiple validator versions</td>
+                </tr>
+                <tr>
+                    <td>CLI Interface</td>
+                    <td>Command-line tool for pipeline integration</td>
+                </tr>
+                <tr>
+                    <td>Python API</td>
+                    <td>Programmatic interface with typed results</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- SYSML V2 MODEL -->
+        <section id="sysml" class="section">
+            <h2>🏗️ SysML v2 Model</h2>
+            
+            <h3>Package Structure</h3>
+            <div class="sysml-code">package Windtrader {
+    doc /* Python wrapper for windtrader-java SysML v2 validator */
+
+    package CoreTypes {
+        import ScalarValues::*;
+        
+        part def ValidationError {
+            attribute line : Integer[0..1];
+            attribute offset : Integer[0..1];
+            attribute near : String[0..1];
+            attribute msg : String[0..1];
+            
+            doc /* Single parse diagnostic from validator */
+        }
+        
+        part def ValidationResult {
+            attribute ok : Boolean;
+            attribute version : String;
+            attribute exitCode : Integer;
+            attribute stdout : String;
+            attribute stderr : String;
+            attribute jarPath : String;
+            attribute durationSeconds : Real;
+            
+            doc /* Result of invoking windtrader-java on text input */
+            
+            constraint validExitCodes {
+                exitCode == 0 or exitCode == 2 or exitCode == 3
+            }
+        }
+        
+        part def CrossVersionResult {
+            attribute latest : ValidationResult;
+            attribute compatible : ValidationResult[0..1];
+            
+            doc /* Container for multi-version validation results */
+        }
+    }
+    
+    package Components {
+        import CoreTypes::*;
+        
+        part def JarManager {
+            doc /* Manages JAR download, caching, and resolution */
+            
+            attribute cacheDir : String;
+            attribute defaultRepo : String = "Westfall-io/windtrader-java";
+            attribute defaultVersion : String = "0.1.1";
+            
+            port javaRepoAPI : ~>> GitHubReleaseAPI;
+            port fileSystemAPI : ~>> FileSystemAPI;
+            
+            perform action resolveCacheDir {
+                doc /* Determine cache directory from env or default */
+            }
+            
+            perform action getJarPath {
+                in version : String;
+                out jarPath : String;
+                
+                doc /* Ensure JAR is cached locally and return path */
+            }
+            
+            perform action downloadJar {
+                in url : String;
+                in destination : String;
+                
+                doc /* Download JAR atomically to avoid partial files */
+            }
+            
+            perform action buildCandidateUrls {
+                in version : String;
+                out urls : String[1..*];
+                
+                doc /* Generate prioritized list of download URLs */
+            }
+        }
+        
+        part def Validator {
+            doc /* Core validator wrapper orchestrating JAR invocation */
+            
+            attribute version : String;
+            attribute timeoutSeconds : Real = 10.0;
+            
+            ref jarManager : JarManager;
+            port javaProcessAPI : ~>> JavaSubprocessAPI;
+            
+            perform action validateText {
+                in text : String;
+                in timeout : Real;
+                out result : ValidationResult;
+                
+                doc /* Validate SysML v2 text using check command */
+            }
+            
+            perform action echo {
+                in text : String;
+                in timeout : Real;
+                out result : ValidationResult;
+                
+                doc /* Parse and echo normalized representation */
+            }
+            
+            perform action validateAcrossVersions {
+                in text : String;
+                in versions : String[1..*];
+                in timeout : Real;
+                out results : ValidationResult[1..*];
+                
+                doc /* Validate against multiple validator versions */
+            }
+        }
+        
+        part def CLI {
+            doc /* Command-line interface for validation */
+            
+            attribute programName : String = "windtrader";
+            
+            ref validator : Validator;
+            port stdioAPI : ~>> StandardIOAPI;
+            
+            perform action main {
+                in args : String[0..*];
+                out exitCode : Integer;
+                
+                doc /* Entry point reading from stdin and forwarding results */
+            }
+            
+            perform action parseArguments {
+                in argv : String[0..*];
+                out javaVersion : String;
+                out timeout : Real;
+            }
+        }
+    }
+    
+    package Interfaces {
+        port def GitHubReleaseAPI {
+            doc /* Interface to GitHub Release API for JAR downloads */
+        }
+        
+        port def FileSystemAPI {
+            doc /* Interface for local file operations */
+        }
+        
+        port def JavaSubprocessAPI {
+            doc /* Interface for spawning Java processes */
+        }
+        
+        port def StandardIOAPI {
+            doc /* Interface for stdin/stdout/stderr */
+        }
+    }
+    
+    package Requirements {
+        requirement def ValidateTextualSyntax {
+            doc /* System shall validate SysML v2 textual syntax */
+            subject system : Validator;
+            
+            requirement def AcceptTextInput {
+                doc /* Accept SysML v2 text as string input */
+            }
+            
+            requirement def InvokeJavaValidator {
+                doc /* Invoke windtrader-java JAR as subprocess */
+            }
+            
+            requirement def ReturnStructuredResult {
+                doc /* Return structured ValidationResult with diagnostics */
+            }
+        }
+        
+        requirement def ManageJarVersions {
+            doc /* System shall manage multiple JAR versions */
+            
+            requirement def DownloadFromGitHub {
+                doc /* Download JARs from GitHub Releases */
+            }
+            
+            requirement def CacheLocally {
+                doc /* Cache downloaded JARs to minimize network usage */
+            }
+            
+            requirement def SupportVersionSelection {
+                doc /* Allow user to specify validator version */
+            }
+        }
+        
+        requirement def ProvideStableAPI {
+            doc /* Provide stable Python API with typed results */
+            
+            requirement def ImmutableDataclasses {
+                doc /* Use frozen dataclasses for result types */
+            }
+            
+            requirement def BackwardCompatibility {
+                doc /* Maintain API stability across releases */
+            }
+        }
+        
+        requirement def IntegrateWithCI {
+            doc /* Enable CI/CD pipeline integration */
+            
+            requirement def CLIInterface {
+                doc /* Provide CLI tool for shell scripting */
+            }
+            
+            requirement def ExitCodeConvention {
+                doc /* Follow standard exit codes: 0=valid, 2=invalid, 3=error */
+            }
+            
+            requirement def TimeoutControl {
+                doc /* Support configurable subprocess timeout */
+            }
+        }
+    }
+    
+    package UseCases {
+        import Components::*;
+        
+        use case ValidateSingleFile {
+            doc /* Developer validates a single SysML file */
+            
+            subject validator : Validator;
+            
+            objective {
+                doc /* Quickly validate syntax during development */
+            }
+        }
+        
+        use case RunInCIPipeline {
+            doc /* CI system validates SysML files on commit */
+            
+            subject cli : CLI;
+            
+            objective {
+                doc /* Automated validation in build pipeline */
+            }
+        }
+        
+        use case CompareValidatorVersions {
+            doc /* Test compatibility across validator versions */
+            
+            subject validator : Validator;
+            
+            objective {
+                doc /* Ensure model remains valid across updates */
+            }
+        }
+        
+        use case CachingForOfflineWork {
+            doc /* Work offline after initial JAR download */
+            
+            subject jarManager : JarManager;
+            
+            objective {
+                doc /* Enable development without network access */
+            }
+        }
+    }
+    
+    package Allocations {
+        import Components::*;
+        import Requirements::*;
+        
+        allocation jarCachingAllocation {
+            allocate ValidateTextualSyntax.InvokeJavaValidator to JarManager.getJarPath;
+            allocate ManageJarVersions.CacheLocally to JarManager;
+            allocate ManageJarVersions.DownloadFromGitHub to JarManager.downloadJar;
+        }
+        
+        allocation validatorAllocation {
+            allocate ValidateTextualSyntax to Validator;
+            allocate ValidateTextualSyntax.AcceptTextInput to Validator.validateText;
+            allocate ValidateTextualSyntax.ReturnStructuredResult to ValidationResult;
+        }
+        
+        allocation cliAllocation {
+            allocate IntegrateWithCI.CLIInterface to CLI;
+            allocate IntegrateWithCI.ExitCodeConvention to CLI.main;
+        }
+    }
+}</div>
+
+            <h3>Key SysML v2 Model Elements</h3>
+            <div class="component-box">
+                <h4>Part Definitions</h4>
+                <ul>
+                    <li><strong>ValidationError</strong>: Represents a single parse diagnostic with line, offset, and message</li>
+                    <li><strong>ValidationResult</strong>: Complete validation outcome with exit codes, stdout/stderr, and timing</li>
+                    <li><strong>JarManager</strong>: Handles JAR lifecycle (download, cache, resolution)</li>
+                    <li><strong>Validator</strong>: Core validation orchestrator</li>
+                    <li><strong>CLI</strong>: Command-line interface wrapper</li>
+                </ul>
+            </div>
+
+            <div class="component-box">
+                <h4>Requirements Hierarchy</h4>
+                <ul>
+                    <li><strong>ValidateTextualSyntax</strong>: Core validation capability</li>
+                    <li><strong>ManageJarVersions</strong>: Version and cache management</li>
+                    <li><strong>ProvideStableAPI</strong>: API stability and typing</li>
+                    <li><strong>IntegrateWithCI</strong>: CI/CD pipeline support</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- PHYSICAL ARCHITECTURE -->
+        <section id="physical" class="section">
+            <h2>🔧 Physical Architecture</h2>
+            
+            <h3>Component Diagram</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    subgraph "Python Package: windtrader"
+        CLI[CLI Module<br/>cli.py]
+        Validator[Validator Module<br/>validator.py]
+        JarMgr[JAR Manager<br/>_jars.py]
+        Types[Type Definitions<br/>_types.py]
+        Init[Package Init<br/>__init__.py]
+    end
+    
+    subgraph "External Dependencies"
+        Java[Java Runtime<br/>JVM]
+        GitHub[GitHub Releases<br/>JAR Repository]
+        FileSystem[File System<br/>~/.cache/windtrader]
+    end
+    
+    subgraph "Runtime Artifacts"
+        JAR[windtrader-java JAR<br/>Validation Engine]
+        Cache[Cached JARs<br/>Local Storage]
+    end
+    
+    CLI --> Validator
+    CLI --> Types
+    Validator --> JarMgr
+    Validator --> Types
+    JarMgr --> GitHub
+    JarMgr --> FileSystem
+    JarMgr --> Cache
+    Validator --> Java
+    Java --> JAR
+    Init --> Validator
+    Init --> Types
+    
+    style CLI fill:#667eea,color:#fff
+    style Validator fill:#667eea,color:#fff
+    style JarMgr fill:#667eea,color:#fff
+    style Types fill:#667eea,color:#fff
+    style Java fill:#764ba2,color:#fff
+    style GitHub fill:#764ba2,color:#fff
+    style JAR fill:#ff6b6b,color:#fff
+                </div>
+            </div>
+
+            <h3>Module Breakdown</h3>
+            
+            <div class="component-box">
+                <h4>cli.py (CLI Module)</h4>
+                <ul>
+                    <li><strong>Lines of Code</strong>: ~105 lines</li>
+                    <li><strong>Dependencies</strong>: argparse, sys, validator module</li>
+                    <li><strong>Entry Points</strong>: main() function</li>
+                    <li><strong>Responsibilities</strong>:
+                        <ul>
+                            <li>Argument parsing (--java-version, --timeout)</li>
+                            <li>Reading from stdin</li>
+                            <li>Invoking validator</li>
+                            <li>Forwarding stdout/stderr</li>
+                            <li>Exit code propagation</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="component-box">
+                <h4>validator.py (Core Validator)</h4>
+                <ul>
+                    <li><strong>Lines of Code</strong>: ~246 lines</li>
+                    <li><strong>Dependencies</strong>: subprocess, time, _jars module</li>
+                    <li><strong>Classes</strong>:
+                        <ul>
+                            <li>ValidationResult (dataclass) - 67 lines</li>
+                            <li>WindtraderValidator - 97 lines</li>
+                        </ul>
+                    </li>
+                    <li><strong>Functions</strong>:
+                        <ul>
+                            <li>validate() - Convenience wrapper</li>
+                            <li>validate_across_versions() - Multi-version testing</li>
+                        </ul>
+                    </li>
+                    <li><strong>Key Operations</strong>:
+                        <ul>
+                            <li>Subprocess invocation with timeout</li>
+                            <li>Capture stdout/stderr</li>
+                            <li>Duration tracking</li>
+                            <li>Exit code interpretation</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="component-box">
+                <h4>_jars.py (JAR Manager)</h4>
+                <ul>
+                    <li><strong>Lines of Code</strong>: ~167 lines</li>
+                    <li><strong>Dependencies</strong>: os, urllib.request, pathlib</li>
+                    <li><strong>Environment Variables</strong>:
+                        <ul>
+                            <li>WINDTRADER_CACHE_DIR - Cache directory override</li>
+                            <li>WINDTRADER_JAVA_REPO - GitHub repo override</li>
+                            <li>WINDTRADER_JAVA_STABLE_ASSET - Direct URL override</li>
+                        </ul>
+                    </li>
+                    <li><strong>Key Functions</strong>:
+                        <ul>
+                            <li>_cache_dir() - Resolve cache location</li>
+                            <li>_jar_cache_path() - Generate cache filepath</li>
+                            <li>_download() - Atomic download operation</li>
+                            <li>_candidate_urls() - Build URL fallback list</li>
+                            <li>get_jar_path() - Main entry point</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="component-box">
+                <h4>_types.py (Type Definitions)</h4>
+                <ul>
+                    <li><strong>Lines of Code</strong>: ~85 lines</li>
+                    <li><strong>Dependencies</strong>: dataclasses, typing</li>
+                    <li><strong>Dataclasses</strong>:
+                        <ul>
+                            <li>ValidationError - Parse diagnostic</li>
+                            <li>ValidationResult - Complete validation result</li>
+                            <li>CrossVersionResult - Multi-version container</li>
+                        </ul>
+                    </li>
+                    <li><strong>Design Pattern</strong>: Immutable frozen dataclasses</li>
+                </ul>
+            </div>
+
+            <h3>Data Flow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant CLI
+    participant Validator
+    participant JarManager
+    participant GitHub
+    participant FileSystem
+    participant Java
+    
+    User->>CLI: cat model.sysml | python -m windtrader.cli
+    CLI->>CLI: Parse arguments
+    CLI->>Validator: validate(text, version, timeout)
+    Validator->>JarManager: get_jar_path(version)
+    
+    alt JAR not cached
+        JarManager->>GitHub: Download JAR from releases
+        GitHub-->>JarManager: JAR binary
+        JarManager->>FileSystem: Cache JAR atomically
+    else JAR cached
+        JarManager->>FileSystem: Check cache
+    end
+    
+    JarManager-->>Validator: JAR path
+    Validator->>Java: java -jar validator.jar check
+    Java->>Java: Parse SysML text
+    Java-->>Validator: exit code, stdout, stderr
+    Validator->>Validator: Build ValidationResult
+    Validator-->>CLI: ValidationResult
+    CLI->>User: Forward stdout/stderr, exit code
+                </div>
+            </div>
+        </section>
+
+        <!-- FUNCTIONAL ARCHITECTURE -->
+        <section id="functional" class="section">
+            <h2>⚙️ Functional Architecture</h2>
+            
+            <h3>System Context</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph LR
+    subgraph External
+        Dev[Developer]
+        CI[CI/CD System]
+        Scripts[Shell Scripts]
+    end
+    
+    subgraph Windtrader System
+        API[Python API]
+        CLI[CLI Interface]
+    end
+    
+    subgraph Backend
+        JavaVal[windtrader-java<br/>Validator]
+        GH[GitHub<br/>Releases]
+    end
+    
+    Dev --> API
+    Dev --> CLI
+    CI --> CLI
+    Scripts --> CLI
+    API --> JavaVal
+    CLI --> JavaVal
+    JavaVal -.Download.-> GH
+    
+    style API fill:#667eea,color:#fff
+    style CLI fill:#667eea,color:#fff
+    style JavaVal fill:#764ba2,color:#fff
+                </div>
+            </div>
+
+            <h3>Functional Capabilities</h3>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🔍 Parse Validation</h4>
+                    <ul>
+                        <li>Syntax checking</li>
+                        <li>Grammar compliance</li>
+                        <li>Error diagnostics</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📦 JAR Management</h4>
+                    <ul>
+                        <li>Version resolution</li>
+                        <li>Download automation</li>
+                        <li>Local caching</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🔄 Process Control</h4>
+                    <ul>
+                        <li>Subprocess spawn</li>
+                        <li>Timeout handling</li>
+                        <li>Stream capture</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📊 Result Processing</h4>
+                    <ul>
+                        <li>Exit code mapping</li>
+                        <li>Structured output</li>
+                        <li>Duration tracking</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>State Machine: JAR Resolution</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+stateDiagram-v2
+    [*] --> CheckCache: Request JAR
+    CheckCache --> CacheHit: JAR exists
+    CheckCache --> BuildUrls: JAR missing
+    
+    BuildUrls --> TryStableURL: Stable asset URL set
+    BuildUrls --> TryVersionTag: No stable URL
+    
+    TryStableURL --> DownloadSuccess: HTTP 200
+    TryStableURL --> TryVersionTag: HTTP error
+    
+    TryVersionTag --> DownloadSuccess: HTTP 200
+    TryVersionTag --> TryPlainTag: HTTP error
+    
+    TryPlainTag --> DownloadSuccess: HTTP 200
+    TryPlainTag --> TryLatest: HTTP error
+    
+    TryLatest --> DownloadSuccess: HTTP 200
+    TryLatest --> DownloadFailed: HTTP error
+    
+    DownloadSuccess --> AtomicWrite: Write to temp
+    AtomicWrite --> CacheHit: Move to cache
+    
+    CacheHit --> [*]: Return path
+    DownloadFailed --> [*]: Raise error
+                </div>
+            </div>
+
+            <h3>Activity: Validation Workflow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    Start([Start]) --> ReadInput[Read SysML Text]
+    ReadInput --> ResolveVersion{Version<br/>Specified?}
+    ResolveVersion -->|No| UseDefault[Use Default 0.1.1]
+    ResolveVersion -->|Yes| VersionProvided[Use Provided Version]
+    
+    UseDefault --> GetJar[Get JAR Path]
+    VersionProvided --> GetJar
+    
+    GetJar --> CheckCache{JAR<br/>Cached?}
+    CheckCache -->|Yes| Cached[Use Cached JAR]
+    CheckCache -->|No| Download[Download JAR]
+    
+    Download --> Cache[Cache JAR]
+    Cache --> Cached
+    
+    Cached --> Spawn[Spawn Java Process]
+    Spawn --> Execute[java -jar check]
+    Execute --> Wait{Within<br/>Timeout?}
+    
+    Wait -->|Yes| Completed[Process Completed]
+    Wait -->|No| Kill[Kill Process]
+    
+    Kill --> Timeout[Timeout Error]
+    Completed --> Capture[Capture stdout/stderr]
+    Capture --> ExitCode{Exit<br/>Code?}
+    
+    ExitCode -->|0| Valid[Valid Syntax]
+    ExitCode -->|2| Invalid[Parse Error]
+    ExitCode -->|Other| RuntimeErr[Runtime Error]
+    
+    Valid --> BuildResult[Build ValidationResult]
+    Invalid --> BuildResult
+    RuntimeErr --> BuildResult
+    Timeout --> BuildResult
+    
+    BuildResult --> Return([Return Result])
+    
+    style Valid fill:#4caf50,color:#fff
+    style Invalid fill:#ff9800,color:#fff
+    style RuntimeErr fill:#f44336,color:#fff
+    style Timeout fill:#f44336,color:#fff
+                </div>
+            </div>
+
+            <h3>Exit Code Mapping</h3>
+            <table>
+                <tr>
+                    <th>Exit Code</th>
+                    <th>Meaning</th>
+                    <th>Action</th>
+                </tr>
+                <tr>
+                    <td>0</td>
+                    <td>Valid Syntax</td>
+                    <td>Validation succeeded, no errors found</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Invalid Syntax</td>
+                    <td>Parse error detected, check stderr for diagnostics</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Runtime Error</td>
+                    <td>Tool failure (linkage error, crash, etc.)</td>
+                </tr>
+                <tr>
+                    <td>Other</td>
+                    <td>Unexpected Failure</td>
+                    <td>Unknown error condition</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- DEPLOYMENT DESIGN -->
+        <section id="deployment" class="section">
+            <h2>🚀 Deployment Design</h2>
+            
+            <h3>Deployment Architecture</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    subgraph DevEnv["Development Environment"]
+        DevMachine[Developer Workstation]
+        PyEnv[Python 3.10+ Environment]
+        LocalCache[Local Cache<br/>~/.cache/windtrader]
+    end
+    
+    subgraph CIEnv["CI/CD Environment"]
+        GHActions[GitHub Actions Runner]
+        GitLabCI[GitLab CI Runner]
+        Jenkins[Jenkins Agent]
+        CICache[CI Cache<br/>/cache/windtrader]
+    end
+    
+    subgraph PkgDist["Package Distribution"]
+        PyPI[PyPI Repository]
+        PrivatePyPI[Private PyPI]
+        GitRepo[Git Repository]
+    end
+    
+    subgraph ExtSvc["External Services"]
+        GHReleases[GitHub Releases<br/>windtrader-java]
+        JavaRuntime[Java Runtime<br/>Requirement]
+    end
+    
+    DevMachine --> PyEnv
+    PyEnv --> LocalCache
+    PyEnv --> GHReleases
+    PyEnv --> JavaRuntime
+    
+    GHActions --> CICache
+    GitLabCI --> CICache
+    Jenkins --> CICache
+    
+    GHActions --> GHReleases
+    GitLabCI --> GHReleases
+    Jenkins --> GHReleases
+    
+    PyPI -.Install.-> PyEnv
+    PyPI -.Install.-> GHActions
+    PyPI -.Install.-> GitLabCI
+    PyPI -.Install.-> Jenkins
+    
+    GitRepo -.Clone.-> DevMachine
+    
+    style DevMachine fill:#667eea,color:#fff
+    style GHActions fill:#764ba2,color:#fff
+    style PyPI fill:#ff6b6b,color:#fff
+                </div>
+            </div>
+
+            <h3>Deployment Scenarios</h3>
+            
+            <div class="deployment-node">
+                <h4>🖥️ Scenario 1: Local Development</h4>
+                <p><strong>Environment</strong>: Developer workstation with Python 3.10+</p>
+                <p><strong>Installation</strong>:</p>
+                <div class="sysml-code">pip install windtrader
+# or for development
+git clone https://github.com/Westfall-io/windtrader
+cd windtrader
+pip install -e .[dev]</div>
+                <p><strong>Usage</strong>:</p>
+                <div class="sysml-code"># Python API
+from windtrader import validate
+result = validate("part def MyPart;", version="0.1.1")
+print(result.ok, result.stderr)
+
+# CLI
+cat model.sysml | python -m windtrader.cli --java-version 0.1.1</div>
+                <p><strong>Cache Location</strong>: <code>~/.cache/windtrader/jars/</code></p>
+                <p><strong>Requirements</strong>:</p>
+                <ul>
+                    <li>Python 3.10 or higher</li>
+                    <li>Java runtime (JRE/JDK) on PATH</li>
+                    <li>Network access for initial JAR download</li>
+                </ul>
+            </div>
+
+            <div class="deployment-node">
+                <h4>🔄 Scenario 2: GitHub Actions CI</h4>
+                <p><strong>Environment</strong>: GitHub Actions workflow</p>
+                <p><strong>Workflow Configuration</strong>:</p>
+                <div class="sysml-code">name: Validate SysML Models
+
+on: [push, pull_request]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Cache windtrader JARs
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/windtrader
+          key: windtrader-${{ runner.os }}-${{ hashFiles('models/**/*.sysml') }}
+      
+      - name: Install windtrader
+        run: pip install windtrader
+      
+      - name: Validate models
+        run: |
+          for file in models/**/*.sysml; do
+            cat "$file" | python -m windtrader.cli --java-version 0.1.1 || exit 1
+          done</div>
+                <p><strong>Benefits</strong>:</p>
+                <ul>
+                    <li>Automated validation on every commit</li>
+                    <li>Cached JARs reduce build time</li>
+                    <li>Fail fast on invalid syntax</li>
+                </ul>
+            </div>
+
+            <div class="deployment-node">
+                <h4>🐳 Scenario 3: Docker Container</h4>
+                <p><strong>Environment</strong>: Containerized validation service</p>
+                <p><strong>Dockerfile</strong>:</p>
+                <div class="sysml-code">FROM python:3.10-slim
+
+# Install Java
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jre-headless && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install windtrader
+RUN pip install --no-cache-dir windtrader
+
+# Create cache directory
+RUN mkdir -p /cache/windtrader
+ENV WINDTRADER_CACHE_DIR=/cache/windtrader
+
+# Set working directory
+WORKDIR /workspace
+
+# Entry point
+ENTRYPOINT ["python", "-m", "windtrader.cli"]</div>
+                <p><strong>Usage</strong>:</p>
+                <div class="sysml-code"># Build image
+docker build -t windtrader-validator .
+
+# Run validation
+docker run -v $(pwd)/models:/workspace -i windtrader-validator < model.sysml</div>
+            </div>
+
+            <div class="deployment-node">
+                <h4>🔧 Scenario 4: GitLab CI/CD</h4>
+                <p><strong>Environment</strong>: GitLab CI pipeline</p>
+                <p><strong>.gitlab-ci.yml Configuration</strong>:</p>
+                <div class="sysml-code">stages:
+  - validate
+
+validate_sysml:
+  stage: validate
+  image: python:3.10
+  
+  before_script:
+    - apt-get update && apt-get install -y openjdk-17-jre-headless
+    - pip install windtrader
+  
+  cache:
+    key: windtrader-jars
+    paths:
+      - .cache/windtrader
+  
+  variables:
+    WINDTRADER_CACHE_DIR: "$CI_PROJECT_DIR/.cache/windtrader"
+  
+  script:
+    - |
+      for file in models/**/*.sysml; do
+        cat "$file" | python -m windtrader.cli --java-version 0.1.1
+        if [ $? -ne 0 ]; then
+          echo "Validation failed for $file"
+          exit 1
+        fi
+      done</div>
+            </div>
+
+            <h3>Environment Variables</h3>
+            <table>
+                <tr>
+                    <th>Variable</th>
+                    <th>Purpose</th>
+                    <th>Default</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td>WINDTRADER_CACHE_DIR</td>
+                    <td>Override cache directory</td>
+                    <td>~/.cache/windtrader</td>
+                    <td>/opt/cache/windtrader</td>
+                </tr>
+                <tr>
+                    <td>WINDTRADER_JAVA_REPO</td>
+                    <td>Override GitHub repository</td>
+                    <td>Westfall-io/windtrader-java</td>
+                    <td>myorg/custom-validator</td>
+                </tr>
+                <tr>
+                    <td>WINDTRADER_JAVA_STABLE_ASSET</td>
+                    <td>Direct JAR URL</td>
+                    <td>(none)</td>
+                    <td>https://example.com/validator.jar</td>
+                </tr>
+            </table>
+
+            <h3>System Requirements</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Requirement</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Python</td>
+                    <td>≥ 3.10</td>
+                    <td>Type hints and match statements</td>
+                </tr>
+                <tr>
+                    <td>Java Runtime</td>
+                    <td>JRE/JDK (any version)</td>
+                    <td>Must be on system PATH</td>
+                </tr>
+                <tr>
+                    <td>Network</td>
+                    <td>HTTPS access to GitHub</td>
+                    <td>Only for initial JAR download</td>
+                </tr>
+                <tr>
+                    <td>Disk Space</td>
+                    <td>~50MB per JAR version</td>
+                    <td>Cached in ~/.cache/windtrader</td>
+                </tr>
+                <tr>
+                    <td>Memory</td>
+                    <td>~256MB</td>
+                    <td>For Java subprocess</td>
+                </tr>
+            </table>
+
+            <h3>Network Architecture</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph LR
+    subgraph "Client Environment"
+        Client[Windtrader Client]
+        Cache[Local JAR Cache]
+    end
+    
+    subgraph "Internet"
+        CDN[GitHub CDN]
+        API[GitHub API]
+    end
+    
+    subgraph "GitHub Infrastructure"
+        Releases[Releases Storage]
+    end
+    
+    Client -->|HTTPS GET| CDN
+    CDN -->|Serve JAR| Client
+    Client -->|Cache Miss| API
+    API -->|Metadata| Client
+    Releases -->|Assets| CDN
+    Client -->|Write| Cache
+    Cache -->|Read| Client
+    
+    style Client fill:#667eea,color:#fff
+    style CDN fill:#764ba2,color:#fff
+                </div>
+            </div>
+
+            <h3>Security Considerations</h3>
+            <div class="component-box">
+                <h4>🔒 Security Best Practices</h4>
+                <ul>
+                    <li><strong>JAR Verification</strong>: Downloads from trusted GitHub Releases only</li>
+                    <li><strong>Atomic Writes</strong>: Temporary files prevent partial downloads</li>
+                    <li><strong>User-Agent Headers</strong>: Identify requests to GitHub</li>
+                    <li><strong>No Credentials Required</strong>: Public assets only</li>
+                    <li><strong>Subprocess Timeouts</strong>: Prevent indefinite hangs</li>
+                    <li><strong>Exit Code Validation</strong>: Only expected codes (0, 2, 3)</li>
+                </ul>
+            </div>
+
+            <h3>Performance Characteristics</h3>
+            <table>
+                <tr>
+                    <th>Operation</th>
+                    <th>Time</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>First JAR Download</td>
+                    <td>5-30 seconds</td>
+                    <td>Depends on network speed, JAR ~20-50MB</td>
+                </tr>
+                <tr>
+                    <td>Cached Validation</td>
+                    <td>0.1-2 seconds</td>
+                    <td>JVM startup + parse time</td>
+                </tr>
+                <tr>
+                    <td>Cache Lookup</td>
+                    <td><10ms</td>
+                    <td>File existence check</td>
+                </tr>
+                <tr>
+                    <td>Process Spawn</td>
+                    <td>50-200ms</td>
+                    <td>Platform-dependent</td>
+                </tr>
+            </table>
+        </section>
+
+        <footer style="text-align: center; padding: 20px; color: white;">
+            <p>Generated Architecture Documentation for Windtrader v0.1.1</p>
+            <p>Python Wrapper for SysML v2 Validation | Westfall-io</p>
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#764ba2',
+                lineColor: '#764ba2',
+                secondaryColor: '#764ba2',
+                tertiaryColor: '#f8f9fa'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,165 +1,104 @@
-# windtrader
+# windtrader (Python wrapper)
 
-**windtrader** is a lightweight Python wrapper around the `windtrader-java` SysML v2 validator.
-It provides a simple, scriptable way to validate SysML v2 textual syntax from Python while
-delegating all grammar authority to the official Java-based validator.
+This repository provides a small Python wrapper around the `windtrader-java` validator.
+The wrapper locates/downloads a pinned Java validator JAR, invokes it as a subprocess,
+and exposes a concise API and CLI for validating SysML v2 textual inputs.
 
-This project is intentionally *parse-only*: it validates syntax, reports diagnostics, and
-(optionally) echoes parsed output, but does **not** perform semantic resolution or model linking.
+## Purpose
 
----
+- Make the `windtrader-java` validator easy to use from Python and CI jobs.
+- Cache downloaded Java validator JARs to minimize repeated network downloads.
+- Provide a stable `ValidationResult` typed API for callers and tests.
 
-## Status
+## Key modules
 
-![CI](https://github.com/Westfall-io/windtrader/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://codecov.io/gh/Westfall-io/windtrader/branch/main/graph/badge.svg)
-![Docstrings](https://img.shields.io/badge/docstrings-interrogate-success)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![License](https://img.shields.io/github/license/Westfall-io/windtrader)
+- `src/windtrader/_jars.py` — JAR resolution and download helpers.
+  - Resolves a local cache directory (default `~/.cache/windtrader`).
+  - Builds candidate GitHub Release URLs and attempts to download the JAR.
+  - Writes downloads atomically to avoid leaving partial files.
+  - Environment variables:
+    - `WINDTRADER_CACHE_DIR` — override cache root.
+    - `WINDTRADER_JAVA_REPO` — override GitHub repo used for releases.
+    - `WINDTRADER_JAVA_STABLE_ASSET` — optional exact download URL (first choice).
 
----
+- `src/windtrader/_types.py` — small dataclasses used by the wrapper.
+  - `ValidationError` — single parse diagnostic.
+  - `ValidationResult` — summary of a validation run (stdout, stderr, exit code).
+  - `CrossVersionResult` — container used when comparing results across versions.
 
-## Key Features
+- `src/windtrader/validator.py` — Python surface for invoking the Java validator.
+  - `WindtraderValidator` class resolves the jar and runs `java -jar <jar> check` and
+    `echo` with a bounded timeout, returning a `ValidationResult`.
+  - `validate()` convenience function wraps a one-shot invocation.
+  - `validate_across_versions()` runs the same text against multiple versions.
 
-- ✅ Validates SysML v2 textual syntax using a pinned Java validator
-- 🧩 Thin, explicit Python API (no hidden model interpretation)
-- 📦 Automatic download and caching of the validator JAR
-- 🧪 Designed for CI, generators, and downstream tooling
-- 🔐 Stable exit-code contract from Java → Python
+- `src/windtrader/cli.py` — lightweight CLI wrapper.
+  - Reads SysML text from stdin, calls `validate()`, forwards stdout/stderr,
+    and exits with the same exit code as the Java tool.
 
----
+## Usage examples
 
-## Installation
-
-```bash
-pip install windtrader
-```
-
-Or for development:
-
-```bash
-pip install -e ".[dev]"
-```
-
-Java **must** be available on your system (CI uses Temurin JDK).
-
----
-
-## Command-Line Usage
+Validate a file from the shell (requires `java` on PATH):
 
 ```bash
-echo "part { attribute mass; }" | windtrader
+cat model.sysml | python -m windtrader.cli --java-version 0.1.1
 ```
 
-Options:
-
-```text
---version            Show windtrader package version
---java-version       windtrader-java version to use (default: 0.1.1)
---timeout            Validation timeout in seconds
-```
-
-The CLI forwards stdout/stderr directly from the Java tool and exits with the same exit code.
-
----
-
-## Python API
-
-### Basic validation
+Use the Python API:
 
 ```python
 from windtrader import validate
 
-result = validate("part { attribute mass; }")
-
-if result.ok:
-    print("Valid SysML")
-else:
-    print("Invalid:", result.stderr)
+res = validate("my sysml text here", version="0.1.1", timeout_s=10.0)
+print(res.exit_code, res.stdout, res.stderr)
 ```
 
-### Validator object
+Validate across versions:
 
 ```python
-from windtrader.validator import WindtraderValidator
+from windtrader import validate_across_versions
 
-v = WindtraderValidator(version="0.1.1")
-res = v.validate("part { attrib mass; }")
-
-print(res.exit_code)   # 0 = valid, 2 = syntax error, 3 = runtime error
+versions = ["0.1.1", "0.1.0"]
+results = validate_across_versions("...text...", versions)
+for r in results:
+    print(r.version, r.exit_code)
 ```
 
-### ValidationResult
+## Behavior & exit codes
 
-Returned objects include:
+The wrapper preserves exit conventions from `windtrader-java`:
+- `0` => valid syntax
+- `2` => invalid syntax (parse error)
+- `3` => runtime / tool error
 
-- `ok`: boolean success flag
-- `exit_code`: Java exit code
-- `stdout` / `stderr`: raw tool output
-- `jar_path`: cached JAR location
-- `duration_s`: execution time
-- `is_invalid_syntax`
-- `is_runtime_error`
+The CLI forwards stdout/stderr and returns the Java process exit code.
 
----
+## Notes on caching and CI
 
-## Exit Code Contract
+- JARs are cached under `~/.cache/windtrader/jars` by default. In CI, set
+  `WINDTRADER_CACHE_DIR` to a persistent cache directory to avoid repeated downloads.
+- If you provide `WINDTRADER_JAVA_STABLE_ASSET`, that URL is tried first.
 
-The Java validator defines:
+## Testing
 
-| Exit Code | Meaning            |
-|----------:|--------------------|
-| 0         | Valid syntax       |
-| 2         | Invalid SysML      |
-| 3         | Runtime error      |
+Run the test suite with `pytest` from repo root (requires test dependencies):
 
-Python preserves these codes exactly.
+```bash
+python -m pytest -q
+```
 
----
+## Requirements
 
-## Configuration
-
-Environment variables:
-
-- `WINDTRADER_CACHE_DIR` – override JAR cache directory
-- `WINDTRADER_JAVA_REPO` – override GitHub repo for JAR downloads
-- `WINDTRADER_JAVA_STABLE_ASSET` – explicit asset URL (optional)
-
----
-
-## Design Philosophy
-
-- **Grammar is authoritative**: validation truth lives in Java
-- **Python is orchestration only**
-- **No silent fallbacks**
-- **Reproducible CI behavior**
-
-This makes `windtrader` suitable as a foundation for:
-
-- Code generators
-- Corpus analysis
-- Model-building libraries
-- CI validation gates
-
----
-
-## Relationship to Other Projects
-
-`windtrader` is designed to act as the validation backbone for higher-level SysML tooling,
-including programmatic builders and corpus-driven API generation pipelines.
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE).
-
----
+- Java runtime (`java`) must be available on `PATH` to run the downloaded JAR.
+- Network access is required the first time a requested JAR version is fetched.
 
 ## Contributing
 
-Pull requests welcome. Please ensure:
+- Keep module-level documentation up to date when changing public behavior.
+- Prefer immutable dataclasses in `_types.py` for stable test assertions.
 
-- CI passes
-- Docstring coverage remains high
-- Validator version bumps are intentional
+---
+
+This `README_GIT.md` is intended as a quick developer-oriented summary of what the
+code does and how to use it from the command line and Python code. For broader
+project details, see `README.md`.
