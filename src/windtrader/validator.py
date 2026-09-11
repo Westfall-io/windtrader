@@ -31,7 +31,7 @@ These exit codes are intentionally preserved and surfaced to callers via Validat
 """
 
 
-DEFAULT_VERSION = "0.1.1"
+DEFAULT_VERSION = "0.1.2"
 
 
 @dataclass(frozen=True)

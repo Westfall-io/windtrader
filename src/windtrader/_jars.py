@@ -28,7 +28,7 @@ import urllib.request
 from pathlib import Path
 
 DEFAULT_REPO = "Westfall-io/windtrader-java"
-DEFAULT_VERSION = "0.1.1"  # Default validator version used when none is provided.
+DEFAULT_VERSION = "0.1.2"  # Default validator version used when none is provided.
 
 
 def _cache_dir() -> Path:

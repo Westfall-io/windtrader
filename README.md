@@ -55,7 +55,7 @@ Options:
 
 ```text
 --version            Show windtrader package version
---java-version       windtrader-java version to use (default: 0.1.1)
+--java-version       windtrader-java version to use (default: 0.1.2)
 --timeout            Validation timeout in seconds
 ```
 
@@ -83,7 +83,7 @@ else:
 ```python
 from windtrader.validator import WindtraderValidator
 
-v = WindtraderValidator(version="0.1.1")
+v = WindtraderValidator(version="0.1.2")
 res = v.validate("part { attrib mass; }")
 
 print(res.exit_code)   # 0 = valid, 2 = syntax error, 3 = runtime error

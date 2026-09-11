@@ -12,4 +12,4 @@ __all__ = [
     "validate_across_versions",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
