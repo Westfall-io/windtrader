@@ -70,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     # Java backend configuration
     p.add_argument(
         "--java-version",
-        default="0.1.1",
+        default="0.1.2",
         help="windtrader-java version to use (GitHub release asset version)",
     )
     p.add_argument(
