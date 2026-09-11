@@ -26,7 +26,7 @@ dev = [
 
 [tool.coverage.run]
 branch = true
-source = ["windseeker"]
+source = ["windtrader"]
 
 [tool.coverage.report]
 show_missing = true
@@ -40,16 +40,6 @@ output = "coverage.xml"
 
 [project.scripts]
 windtrader = "windtrader.cli:main"
-
-# -------------------------
-# setuptools package config
-# -------------------------
-[tool.setuptools]
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["windseeker*"]
 
 # -------------------------
 # ruff (format + lint)
