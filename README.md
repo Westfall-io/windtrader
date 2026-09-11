@@ -86,7 +86,7 @@ from windtrader.validator import WindtraderValidator
 v = WindtraderValidator(version="0.1.2")
 res = v.validate("part { attrib mass; }")
 
-print(res.exit_code)   # 0 = valid, 2 = syntax error, 3 = runtime error
+print(res.exit_code)  # 0 = valid, 2 = syntax error, 3 = runtime error
 ```
 
 ### ValidationResult

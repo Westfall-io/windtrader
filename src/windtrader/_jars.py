@@ -159,7 +159,7 @@ def get_jar_path(version: str) -> Path:
             _download(url, dest)
             if dest.exists() and dest.stat().st_size > 0:
                 return dest
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - intentionally try any download failure against the next candidate URL
             last_err = e
 
     msg = "Failed to download windtrader-java jar.\nTried:\n" + "\n".join(f"  - {u}" for u in tried)
