@@ -5,7 +5,7 @@ import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ._jars import get_jar_path
+from ._jars import DEFAULT_VERSION, get_jar_path
 
 """
 Python wrapper around the `windtrader-java` validator.
@@ -28,9 +28,6 @@ We rely on the validator jar's CLI behavior:
 
 These exit codes are intentionally preserved and surfaced to callers via ValidationResult.
 """
-
-
-DEFAULT_VERSION = "0.1.2"
 
 
 @dataclass(frozen=True)

@@ -15,7 +15,7 @@ import pytest
 
 import windtrader
 from windtrader import cli
-from windtrader.validator import ValidationResult
+from windtrader.validator import DEFAULT_VERSION, ValidationResult
 
 
 def _result(exit_code: int = 0, stdout: str = "", stderr: str = "") -> ValidationResult:
@@ -89,13 +89,13 @@ def test_empty_stdin_is_still_validated(fake_validate, stdin_text):
 
 
 def test_default_java_version_and_timeout(fake_validate, stdin_text):
-    """Defaults are windtrader-java 0.1.2 and a 10 second timeout."""
+    """Defaults are the shared DEFAULT_VERSION and a 10 second timeout."""
     stdin_text("part def P;")
 
     cli.main([])
 
     kwargs = fake_validate.calls[0][1]
-    assert kwargs["version"] == "0.1.2"
+    assert kwargs["version"] == DEFAULT_VERSION
     assert kwargs["timeout_s"] == 10.0
 
 

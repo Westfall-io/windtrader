@@ -45,6 +45,7 @@ INVALID_SOURCES = [
     pytest.param("requirement Req1 { doc /** heading **/; }", id="doc-comment-in-requirement"),
     pytest.param("part { @@@ ; }", id="illegal-symbols"),
     pytest.param("part { attribute méss; }", id="non-ascii-identifier"),
+    pytest.param("part {\n  attribute mass;\n  attribute vol;\n  attrib wrong;\n}", id="multiline"),
 ]
 
 DIAGNOSTIC_RE = re.compile(r"^error: line=(\d+) offset=(\d+) near=", re.MULTILINE)
@@ -65,8 +66,12 @@ def jar_path(tmp_path_factory):
         if not os.environ.get("WINDTRADER_CACHE_DIR"):
             mp.setenv("WINDTRADER_CACHE_DIR", str(tmp_path_factory.mktemp("windtrader-cache")))
 
-        path = get_jar_path(DEFAULT_VERSION)
-        assert path.exists() and path.stat().st_size > 0, f"jar missing or empty: {path}"
+        try:
+            path = get_jar_path(DEFAULT_VERSION)
+        except RuntimeError as exc:  # download failed (offline / unauthed / retagged release)
+            pytest.skip(f"could not fetch windtrader-java jar: {exc}")
+        else:
+            assert path.exists() and path.stat().st_size > 0, f"jar missing or empty: {path}"
 
         # Keep the cache env in place for the whole session: the validator re-resolves
         # the jar path on every invocation.
@@ -131,8 +136,19 @@ def test_invalid_source_emits_located_diagnostic(validator, source):
     matches = DIAGNOSTIC_RE.findall(res.stderr)
     assert matches, f"no located diagnostic in stderr={res.stderr!r}"
     line, offset = matches[0]
-    assert int(line) == 1
+    assert int(line) >= 1
     assert int(offset) >= 0
+
+
+def test_multiline_invalid_source_reports_correct_line(validator):
+    """A parse error on a later line is reported with that line number, not hardcoded to 1."""
+    source = "part {\n  attribute mass;\n  attribute vol;\n  attrib wrong;\n}"
+    res = validator.validate_text(source, timeout_s=TIMEOUT_S)
+    assert res.exit_code == 2
+    matches = DIAGNOSTIC_RE.findall(res.stderr)
+    assert matches, f"no located diagnostic in stderr={res.stderr!r}"
+    line = int(matches[0][0])
+    assert line == 4, f"expected error on line 4, got line {line}: {res.stderr}"
 
 
 def test_misspelled_keyword_diagnostic_is_exact(validator):

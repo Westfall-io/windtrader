@@ -29,6 +29,7 @@ dev = [
 # -------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--strict-markers"
 markers = [
   "jar: integration tests that invoke the real windtrader-java JAR (requires java on PATH)",
 ]

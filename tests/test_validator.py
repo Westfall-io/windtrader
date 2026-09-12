@@ -8,6 +8,7 @@ so these tests run anywhere and assert the exact contract the wrapper has with t
 
 from __future__ import annotations
 
+import inspect
 import subprocess
 from pathlib import Path
 
@@ -310,7 +311,19 @@ def test_package_exports_public_api():
         assert getattr(windtrader, name) is getattr(validator_mod, name)
 
 
-def test_package_version_matches_validator_default():
-    """The package version and the default java backend version stay in lockstep."""
-    assert windtrader.__version__ == "0.1.2"
-    assert windtrader.__version__ == validator_mod.DEFAULT_VERSION
+def test_package_version_is_reported():
+    """The package __version__ matches the distribution metadata."""
+    import importlib.metadata
+
+    assert windtrader.__version__ == importlib.metadata.version("windtrader")
+
+
+def test_default_version_single_sourced():
+    """cli, validator, and _jars all share one DEFAULT_VERSION (regression: PR #2)."""
+    import windtrader._jars as jars_mod
+    import windtrader.cli as cli_mod
+
+    # cli's --java-version default must come from the shared constant, not a literal.
+    src = inspect.getsource(cli_mod)
+    assert 'default="0.1.2"' not in src
+    assert cli_mod.DEFAULT_VERSION is jars_mod.DEFAULT_VERSION
