@@ -30,7 +30,7 @@ import argparse
 import sys
 
 from . import __version__
-from .validator import validate
+from .validator import DEFAULT_VERSION, validate
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -70,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     # Java backend configuration
     p.add_argument(
         "--java-version",
-        default="0.1.2",
+        default=DEFAULT_VERSION,
         help="windtrader-java version to use (GitHub release asset version)",
     )
     p.add_argument(
