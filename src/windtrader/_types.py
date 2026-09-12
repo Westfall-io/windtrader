@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(frozen=True)
 class ValidationError:
-    line: Optional[int]
-    offset: Optional[int]
-    near: Optional[str]
-    msg: Optional[str]
+    line: int | None
+    offset: int | None
+    near: str | None
+    msg: str | None
 
 
 @dataclass(frozen=True)
@@ -26,4 +25,4 @@ class ValidationResult:
 @dataclass(frozen=True)
 class CrossVersionResult:
     latest: ValidationResult
-    compatible: Optional[ValidationResult]  # a previous version that passes, if any
+    compatible: ValidationResult | None  # a previous version that passes, if any

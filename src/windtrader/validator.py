@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from ._jars import get_jar_path
-
-from dataclasses import dataclass
-from typing import Sequence
-
 import subprocess
 import time
+from collections.abc import Sequence
+from dataclasses import dataclass
+
+from ._jars import get_jar_path
 
 """
 Python wrapper around the `windtrader-java` validator.
@@ -131,6 +130,7 @@ class WindtraderValidator:
             text=True,
             capture_output=True,
             timeout=timeout_s,
+            check=False,
         )
         t1 = time.time()
 
@@ -172,6 +172,7 @@ class WindtraderValidator:
             text=True,
             capture_output=True,
             timeout=timeout_s,
+            check=False,
         )
         t1 = time.time()
 
