@@ -24,6 +24,15 @@ dev = [
   "interrogate>=1.7",
 ]
 
+# -------------------------
+# pytest
+# -------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "jar: integration tests that invoke the real windtrader-java JAR (requires java on PATH)",
+]
+
 [tool.coverage.run]
 branch = true
 source = ["windtrader"]
