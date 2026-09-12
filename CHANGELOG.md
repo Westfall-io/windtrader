@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.1.2 (2026-09-12)
+
+### :memo:
+
+- :memo: Updating README.md
+  ([`79ff55f`](https://github.com/Westfall-io/windtrader/commit/79ff55f9197a964c142723b252d396b014dc67bf))
+
+### Other
+
+- ♻️ Remove leftover windseeker refs (Claude Code review)
+  ([`3c4d37e`](https://github.com/Westfall-io/windtrader/commit/3c4d37e20c73893dbcdbaa9f0b69640f4476cf56))
+
+- 🧹 Fix pre-existing lint errors so CI passes (unblocks releases)
+  ([`9a7a302`](https://github.com/Westfall-io/windtrader/commit/9a7a3025b21fc3cc1bea1a56b27a745f7123bd62))
+
+### 🐛
+
+- 🐛 Fix CLI entry point and bump default jar version to 0.1.2
+  ([`6e17754`](https://github.com/Westfall-io/windtrader/commit/6e17754acaacd886949b3ad79a1a7e08b078193c))
+
+
 ## v0.1.1 (2026-01-19)
 
 ### 🐛
