@@ -227,7 +227,7 @@ def test_validator_resolves_jar_for_its_own_version(monkeypatch, fake_run):
 def test_default_version_matches_module_constant(fake_run):
     """A default-constructed validator uses `validator.DEFAULT_VERSION`."""
     assert WindtraderValidator().version == validator_mod.DEFAULT_VERSION
-    assert validator_mod.DEFAULT_VERSION == "0.1.2"
+    assert validator_mod.DEFAULT_VERSION == "0.1.4"
 
 
 def test_timeout_expired_propagates(monkeypatch):
@@ -325,5 +325,5 @@ def test_default_version_single_sourced():
 
     # cli's --java-version default must come from the shared constant, not a literal.
     src = inspect.getsource(cli_mod)
-    assert 'default="0.1.2"' not in src
+    assert f'default="{jars_mod.DEFAULT_VERSION}"' not in src
     assert cli_mod.DEFAULT_VERSION is jars_mod.DEFAULT_VERSION
