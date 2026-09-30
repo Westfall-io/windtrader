@@ -9,6 +9,7 @@ so these tests run anywhere and assert the exact contract the wrapper has with t
 from __future__ import annotations
 
 import inspect
+import re
 import subprocess
 from pathlib import Path
 
@@ -320,7 +321,6 @@ def test_package_version_is_reported():
 
 def test_default_version_single_sourced():
     """cli, validator, and _jars all share one DEFAULT_VERSION (regression: PR #2)."""
-    import re
     import windtrader._jars as jars_mod
     import windtrader.cli as cli_mod
 
