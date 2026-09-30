@@ -9,6 +9,7 @@ so these tests run anywhere and assert the exact contract the wrapper has with t
 from __future__ import annotations
 
 import inspect
+import re
 import subprocess
 from pathlib import Path
 
@@ -324,6 +325,10 @@ def test_default_version_single_sourced():
     import windtrader.cli as cli_mod
 
     # cli's --java-version default must come from the shared constant, not a literal.
+    # Ban ANY pinned semver at the call site — version-independent, so a stale pin
+    # (e.g. `default="0.1.2"`) or a future pin is caught, not just the current one.
     src = inspect.getsource(cli_mod)
-    assert f'default="{jars_mod.DEFAULT_VERSION}"' not in src
+    assert not re.search(r'default\s*=\s*["\']\d+\.\d+\.\d+["\']', src), (
+        "cli.py hardcodes a default version literal; it must use DEFAULT_VERSION"
+    )
     assert cli_mod.DEFAULT_VERSION is jars_mod.DEFAULT_VERSION

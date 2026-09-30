@@ -175,17 +175,27 @@ def test_parse_error_leaves_stdout_empty(validator):
 def test_echo_round_trips_valid_source(validator, source):
     """`echo` re-emits valid input in canonical form on stdout and exits 0.
 
-    Since the 0.62.0 pilot, `echo` may canonicalize the trailing newline
-    (single-line non-empty input gains a trailing `\\n`; empty input becomes
-    a lone `\\n`; input already ending in `\\n` is preserved byte-for-byte).
-    Stripping trailing newlines from the emitted form must recover the input
-    byte-for-byte in every case.
+    Since the 0.62.0 pilot, `echo` canonicalizes the trailing newline: a
+    single-line non-empty source comes back as `source + "\\n"`, while a source
+    already ending in `\\n` is preserved byte-for-byte. Assert the exact
+    canonical output (not a fuzzy rstrip), so a regression that emits extra
+    newlines or truncates is caught.
     """
     res = validator.echo(source, timeout_s=TIMEOUT_S)
 
     assert res.exit_code == 0, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
     assert res.ok is True
-    assert res.stdout.rstrip("\n") == source
+    expected = source if source.endswith("\n") else source + "\n"
+    assert res.stdout == expected, f"stdout={res.stdout!r} expected={expected!r}"
+
+
+def test_echo_empty_input_canonicalizes_to_newline(validator):
+    """`echo` turns empty input into a lone newline (0.62.0 canonical form)."""
+    res = validator.echo("", timeout_s=TIMEOUT_S)
+
+    assert res.exit_code == 0, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
+    assert res.ok is True
+    assert res.stdout == "\n"
 
 
 @pytest.mark.parametrize("source", VALID_SOURCES)
