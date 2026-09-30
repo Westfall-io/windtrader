@@ -320,10 +320,15 @@ def test_package_version_is_reported():
 
 def test_default_version_single_sourced():
     """cli, validator, and _jars all share one DEFAULT_VERSION (regression: PR #2)."""
+    import re
     import windtrader._jars as jars_mod
     import windtrader.cli as cli_mod
 
     # cli's --java-version default must come from the shared constant, not a literal.
+    # Ban ANY pinned semver at the call site — version-independent, so a stale pin
+    # (e.g. `default="0.1.2"`) or a future pin is caught, not just the current one.
     src = inspect.getsource(cli_mod)
-    assert f'default="{jars_mod.DEFAULT_VERSION}"' not in src
+    assert not re.search(r'default\s*=\s*["\']\d+\.\d+\.\d+["\']', src), (
+        "cli.py hardcodes a default version literal; it must use DEFAULT_VERSION"
+    )
     assert cli_mod.DEFAULT_VERSION is jars_mod.DEFAULT_VERSION
