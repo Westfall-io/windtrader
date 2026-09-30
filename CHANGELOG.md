@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v0.1.3 (2026-09-30)
+
+### Other
+
+- ♻️ Address Claude Code review: single-source version, robustness, strict markers
+  ([`594fae1`](https://github.com/Westfall-io/windtrader/commit/594fae1d89022cb9f4f57c5093e8ed569a45bc7f))
+
+- ✅ Add real-jar integration + unit test suite for the windtrader wrapper
+  ([`60ead01`](https://github.com/Westfall-io/windtrader/commit/60ead01684ba1540378dbef1fad171b586c4d7bb))
+
+- 📝 Update README default windtrader-java version to 0.1.4
+  ([`47b3320`](https://github.com/Westfall-io/windtrader/commit/47b3320e5e016f66ce0e466699ee7f2f1cee9d34))
+
+- 🔧 Address Claude review: version-independent default guard, byte-exact echo assertion, bump
+  package to 0.1.3
+  ([`412b638`](https://github.com/Westfall-io/windtrader/commit/412b638733ce2589138394de0561767dbf29915d))
+
+- 🔧 Point default windtrader-java version to 0.1.4 (pilot 0.62.0)
+  ([`c0006ce`](https://github.com/Westfall-io/windtrader/commit/c0006ce82f07b80174760608a0b92b56193f6603))
+
+### 🐛
+
+- 🐛 Fix ruff I001: move re import to top-level import block
+  ([`6ff2141`](https://github.com/Westfall-io/windtrader/commit/6ff2141a328201597ceac5617ce8b946ff79fd64))
+
+
 ## v0.1.2 (2026-09-12)
 
 ### :memo:
