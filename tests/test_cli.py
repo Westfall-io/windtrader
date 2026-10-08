@@ -9,6 +9,7 @@ exit code forwarded.
 from __future__ import annotations
 
 import io
+import subprocess
 import sys
 
 import pytest
@@ -83,6 +84,26 @@ def fake_export(monkeypatch):
 
     recorder = Recorder()
     monkeypatch.setattr(cli, "client_export", recorder)
+    return recorder
+
+
+@pytest.fixture
+def fake_echo(monkeypatch):
+    """Replace `cli.client_echo` with a recorder for echo-subcommand tests."""
+
+    class Recorder:
+        """Captures echo() calls made by the CLI and returns a canned result."""
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[tuple, dict]] = []
+            self.result = _result(0)
+
+        def __call__(self, *args, **kwargs):
+            self.calls.append((args, kwargs))
+            return self.result
+
+    recorder = Recorder()
+    monkeypatch.setattr(cli, "client_echo", recorder)
     return recorder
 
 
@@ -189,14 +210,23 @@ def test_export_subcommand_runs_export_on_stdin(fake_export, stdin_text):
 
 
 def test_export_subcommand_forwards_defaults(fake_export, stdin_text):
-    """`export` uses the shared DEFAULT_VERSION and the default timeout."""
+    """`export` uses the shared DEFAULT_VERSION and a 60s default timeout."""
     stdin_text("part def P;")
 
     cli.main(["export"])
 
     kwargs = fake_export.calls[0][1]
     assert kwargs["version"] == DEFAULT_VERSION
-    assert kwargs["timeout_s"] == 10.0
+    assert kwargs["timeout_s"] == 60.0
+
+
+def test_check_subcommand_uses_ten_second_default(fake_validate, stdin_text):
+    """`check` (default) uses a 10s default timeout."""
+    stdin_text("part def P;")
+
+    cli.main([])
+
+    assert fake_validate.calls[0][1]["timeout_s"] == 10.0
 
 
 def test_export_subcommand_accepts_java_version_and_timeout(fake_export, stdin_text):
@@ -239,6 +269,60 @@ def test_export_subcommand_forwards_stderr(fake_export, stdin_text, capsys):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == "error: line=1 offset=3 near=not\n"
+
+
+# ---------------------------------------------------------------------------
+# echo subcommand
+# ---------------------------------------------------------------------------
+
+
+def test_echo_subcommand_runs_echo_on_stdin(fake_echo, stdin_text):
+    """`windtrader echo` calls `client_echo` with the stdin text."""
+    stdin_text("part def P;")
+
+    cli.main(["echo"])
+
+    assert len(fake_echo.calls) == 1
+    assert fake_echo.calls[0][0][0] == "part def P;"
+
+
+def test_echo_subcommand_forwards_defaults(fake_echo, stdin_text):
+    """`echo` uses the shared DEFAULT_VERSION and a 10s default timeout."""
+    stdin_text("part def P;")
+
+    cli.main(["echo"])
+
+    kwargs = fake_echo.calls[0][1]
+    assert kwargs["version"] == DEFAULT_VERSION
+    assert kwargs["timeout_s"] == 10.0
+
+
+def test_echo_subcommand_forwards_exit_code(fake_echo, stdin_text):
+    """`windtrader echo` returns the jar's exit code."""
+    stdin_text("part def P;")
+    fake_echo.result = _result(2)
+
+    assert cli.main(["echo"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# timeout handling
+# ---------------------------------------------------------------------------
+
+
+def test_timeout_returns_runtime_error_exit_3(monkeypatch, stdin_text, capsys):
+    """A subprocess timeout is caught and surfaced as exit 3, not a traceback."""
+    stdin_text("part def P;")
+
+    def _raise_timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=["java"], timeout=30.0)
+
+    monkeypatch.setattr(cli, "client_export", _raise_timeout)
+
+    rc = cli.main(["export"])
+
+    assert rc == 3
+    assert "timeout" in capsys.readouterr().err.lower()
 
 
 # ---------------------------------------------------------------------------

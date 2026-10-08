@@ -196,6 +196,18 @@ def test_validate_text_passes_timeout_through(fake_run):
     assert fake_run.kwargs["timeout"] == 2.5
 
 
+def test_default_timeout_is_ten_seconds(fake_run):
+    """The documented default subprocess timeout is 10 seconds."""
+    WindtraderClient().validate_text("part def P;")
+    assert fake_run.kwargs["timeout"] == 10.0
+
+
+def test_echo_default_timeout_is_ten_seconds(fake_run):
+    """`echo` also defaults to a 10 second subprocess timeout."""
+    WindtraderClient().echo("part def P;")
+    assert fake_run.kwargs["timeout"] == 10.0
+
+
 def test_echo_passes_timeout_through(fake_run):
     """`echo` honors its own timeout argument."""
     WindtraderClient().echo("part def P;", timeout_s=7.0)
@@ -203,9 +215,9 @@ def test_echo_passes_timeout_through(fake_run):
 
 
 def test_export_uses_longer_default_timeout(fake_run):
-    """`export` defaults to a 30s timeout (library load + resolve/transform)."""
+    """`export` defaults to a 60s timeout (library load + resolve/transform)."""
     WindtraderClient().export("part def P;")
-    assert fake_run.kwargs["timeout"] == 30.0
+    assert fake_run.kwargs["timeout"] == 60.0
 
 
 def test_export_passes_timeout_through(fake_run):

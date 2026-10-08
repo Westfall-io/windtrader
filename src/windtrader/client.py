@@ -173,7 +173,7 @@ class WindtraderClient:
         """
         return self._run("echo", text, timeout_s)
 
-    def export(self, text: str, timeout_s: float = 30.0) -> CommandResult:
+    def export(self, text: str, timeout_s: float = 60.0) -> CommandResult:
         """
         Run `windtrader-java export` on SysML v2 text.
 
@@ -188,7 +188,8 @@ class WindtraderClient:
             SysML v2 textual syntax to export to its element JSON graph.
         timeout_s:
             Subprocess timeout in seconds (default higher than check/echo because
-            export loads the standard library and runs resolve/transform).
+            export loads the standard library and runs resolve/transform, which
+            can take ~55s on a cold JVM even for small models).
 
         Returns
         -------
@@ -239,7 +240,7 @@ def echo(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0) -> 
     return WindtraderClient(version=version).echo(text, timeout_s=timeout_s)
 
 
-def export(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 30.0) -> CommandResult:
+def export(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 60.0) -> CommandResult:
     """
     Export SysML v2 text to its element JSON graph in one call.
 
