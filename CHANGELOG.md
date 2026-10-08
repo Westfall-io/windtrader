@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v0.2.0 (2026-10-08)
+
+### Other
+
+- 📝 Rename-match README example variable and Contributing wording (review nits)
+  ([`e7db742`](https://github.com/Westfall-io/windtrader/commit/e7db74286be1073bfee9237417f020866efab6c8))
+
+- 🔧 Raise export default to 120s; fix no-op module docstring; note the 0.2.0 rename in README
+  ([`90a2889`](https://github.com/Westfall-io/windtrader/commit/90a2889884de53b8451a9c58016dc544053c5e81))
+
+- 🔧 Round-2 review fixes: correct docstring/README timeout text, give export integration tests real
+  headroom
+  ([`eb6cffd`](https://github.com/Westfall-io/windtrader/commit/eb6cffd8d3069ee16b53ec730a08863ed23acabe))
+
+### ✨
+
+- ✨ Expose export + rename validator.py to client.py; consume windtrader-java 0.2.0
+  ([`66f28bc`](https://github.com/Westfall-io/windtrader/commit/66f28bc453704f1b06be0a2bbdb7cb6ae791b5c4))
+
+### 🐛
+
+- 🐛 Fix windtrader export CLI timeout: 10s default would always time out on a cold JVM; raise export
+  default to 60s
+  ([`af89eb3`](https://github.com/Westfall-io/windtrader/commit/af89eb3f30a2b78825d1137f343b66737e6b7b88))
+
+
 ## v0.1.3 (2026-09-30)
 
 ### Other
