@@ -1,5 +1,5 @@
 """
-Unit tests for `windtrader.validator`.
+Unit tests for `windtrader.client`.
 
 No JVM and no network: `subprocess.run` and `get_jar_path` are both monkeypatched,
 so these tests run anywhere and assert the exact contract the wrapper has with the
@@ -16,10 +16,10 @@ from pathlib import Path
 import pytest
 
 import windtrader
-from windtrader import validator as validator_mod
-from windtrader.validator import (
-    ValidationResult,
-    WindtraderValidator,
+from windtrader import client as client_mod
+from windtrader.client import (
+    CommandResult,
+    WindtraderClient,
     validate,
     validate_across_versions,
 )
@@ -27,8 +27,8 @@ from windtrader.validator import (
 FAKE_JAR = Path("/fake/cache/jars/windtrader-java-0.1.2.jar")
 
 
-def _result(exit_code: int = 0, **overrides) -> ValidationResult:
-    """Build a ValidationResult with sensible defaults for property-level assertions."""
+def _result(exit_code: int = 0, **overrides) -> CommandResult:
+    """Build a CommandResult with sensible defaults for property-level assertions."""
     fields = {
         "ok": exit_code == 0,
         "version": "0.1.2",
@@ -39,7 +39,7 @@ def _result(exit_code: int = 0, **overrides) -> ValidationResult:
         "duration_s": 0.0,
     }
     fields.update(overrides)
-    return ValidationResult(**fields)
+    return CommandResult(**fields)
 
 
 class FakeCompletedProcess:
@@ -54,7 +54,7 @@ class FakeCompletedProcess:
 @pytest.fixture
 def fake_run(monkeypatch):
     """
-    Replace `subprocess.run` and `get_jar_path` inside the validator module.
+    Replace `subprocess.run` and `get_jar_path` inside the client module.
 
     Returns a recorder object whose `.calls` holds one (args, kwargs) tuple per
     invocation, and whose `.returncode` / `.stdout` / `.stderr` configure the reply.
@@ -84,13 +84,13 @@ def fake_run(monkeypatch):
             return self.calls[-1][1]
 
     recorder = Recorder()
-    monkeypatch.setattr(validator_mod.subprocess, "run", recorder)
-    monkeypatch.setattr(validator_mod, "get_jar_path", lambda version: FAKE_JAR)
+    monkeypatch.setattr(client_mod.subprocess, "run", recorder)
+    monkeypatch.setattr(client_mod, "get_jar_path", lambda version: FAKE_JAR)
     return recorder
 
 
 # ---------------------------------------------------------------------------
-# ValidationResult
+# CommandResult
 # ---------------------------------------------------------------------------
 
 
@@ -120,34 +120,68 @@ def test_runtime_error_result_flags(exit_code):
 
 
 def test_validation_result_is_frozen():
-    """ValidationResult is immutable so callers cannot mutate reported outcomes."""
+    """CommandResult is immutable so callers cannot mutate reported outcomes."""
     res = _result(0)
     with pytest.raises(Exception):  # noqa: B017 - dataclasses raise FrozenInstanceError
         res.ok = False  # type: ignore[misc]
 
 
 # ---------------------------------------------------------------------------
-# WindtraderValidator.validate_text / echo
+# WindtraderClient.validate_text / echo / export
 # ---------------------------------------------------------------------------
 
 
 def test_validate_text_builds_exact_check_argv(fake_run):
-    """`check` is invoked as exactly ["java", "-jar", <jar>, "check"]."""
-    WindtraderValidator().validate_text("part { attribute mass; }")
+    """`check` is invoked as exactly [\"java\", \"-jar\", <jar>, \"check\"]."""
+    WindtraderClient().validate_text("part { attribute mass; }")
 
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "check"]
 
 
 def test_echo_builds_exact_echo_argv(fake_run):
-    """`echo` is invoked as exactly ["java", "-jar", <jar>, "echo"]."""
-    WindtraderValidator().echo("part { attribute mass; }")
+    """`echo` is invoked as exactly [\"java\", \"-jar\", <jar>, \"echo\"]."""
+    WindtraderClient().echo("part { attribute mass; }")
 
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "echo"]
 
 
+def test_export_builds_exact_export_argv(fake_run):
+    """`export` is invoked as exactly [\"java\", \"-jar\", <jar>, \"export\"]."""
+    WindtraderClient().export("part { attribute mass; }")
+
+    assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "export"]
+
+
+def test_export_surfaces_json_stdout(fake_run):
+    """A successful export returns the JSON element graph on stdout."""
+    json_out = '[{"@id": "x", "@type": "PartUsage"}]'
+    fake_run.returncode = 0
+    fake_run.stdout = json_out
+
+    res = WindtraderClient().export("part def P;")
+
+    assert res.ok is True
+    assert res.exit_code == 0
+    assert res.stdout == json_out
+
+
+def test_export_invalid_input_exits_two(fake_run):
+    """Invalid SysML input yields exit 2 and no JSON on stdout."""
+    fake_run.returncode = 2
+    fake_run.stdout = ""
+    fake_run.stderr = "error: line=1 offset=5 near=parse"
+
+    res = WindtraderClient().export("this is not sysml")
+
+    assert res.ok is False
+    assert res.is_invalid_syntax is True
+    assert res.stdout == ""
+    assert "error:" in res.stderr
+
+
 def test_validate_text_passes_input_as_text(fake_run):
     """The SysML source is piped to the jar via stdin in text mode with output captured."""
-    WindtraderValidator().validate_text("part def P;")
+    WindtraderClient().validate_text("part def P;")
 
     kwargs = fake_run.kwargs
     assert kwargs["input"] == "part def P;"
@@ -158,20 +192,38 @@ def test_validate_text_passes_input_as_text(fake_run):
 
 def test_validate_text_passes_timeout_through(fake_run):
     """The caller's timeout reaches `subprocess.run` unchanged."""
-    WindtraderValidator().validate_text("part def P;", timeout_s=2.5)
+    WindtraderClient().validate_text("part def P;", timeout_s=2.5)
     assert fake_run.kwargs["timeout"] == 2.5
-
-
-def test_echo_passes_timeout_through(fake_run):
-    """`echo` honors its own timeout argument."""
-    WindtraderValidator().echo("part def P;", timeout_s=7.0)
-    assert fake_run.kwargs["timeout"] == 7.0
 
 
 def test_default_timeout_is_ten_seconds(fake_run):
     """The documented default subprocess timeout is 10 seconds."""
-    WindtraderValidator().validate_text("part def P;")
+    WindtraderClient().validate_text("part def P;")
     assert fake_run.kwargs["timeout"] == 10.0
+
+
+def test_echo_default_timeout_is_ten_seconds(fake_run):
+    """`echo` also defaults to a 10 second subprocess timeout."""
+    WindtraderClient().echo("part def P;")
+    assert fake_run.kwargs["timeout"] == 10.0
+
+
+def test_echo_passes_timeout_through(fake_run):
+    """`echo` honors its own timeout argument."""
+    WindtraderClient().echo("part def P;", timeout_s=7.0)
+    assert fake_run.kwargs["timeout"] == 7.0
+
+
+def test_export_uses_longer_default_timeout(fake_run):
+    """`export` defaults to a 120s timeout (library load + resolve/transform)."""
+    WindtraderClient().export("part def P;")
+    assert fake_run.kwargs["timeout"] == 120.0
+
+
+def test_export_passes_timeout_through(fake_run):
+    """`export` honors an explicit timeout argument."""
+    WindtraderClient().export("part def P;", timeout_s=12.0)
+    assert fake_run.kwargs["timeout"] == 12.0
 
 
 def test_validate_text_surfaces_exit_code_and_streams(fake_run):
@@ -180,7 +232,7 @@ def test_validate_text_surfaces_exit_code_and_streams(fake_run):
     fake_run.stdout = "some output"
     fake_run.stderr = "error: line=1 offset=14 near=mass\n"
 
-    res = WindtraderValidator().validate_text("part { attrib mass; }")
+    res = WindtraderClient().validate_text("part { attrib mass; }")
 
     assert res.ok is False
     assert res.exit_code == 2
@@ -194,7 +246,7 @@ def test_validate_text_coerces_none_streams_to_empty_strings(fake_run):
     fake_run.stdout = None
     fake_run.stderr = None
 
-    res = WindtraderValidator().validate_text("part def P;")
+    res = WindtraderClient().validate_text("part def P;")
 
     assert res.stdout == ""
     assert res.stderr == ""
@@ -202,14 +254,14 @@ def test_validate_text_coerces_none_streams_to_empty_strings(fake_run):
 
 def test_result_metadata_reports_version_jar_and_duration(fake_run):
     """The result records the requested version, the resolved jar path and a duration."""
-    res = WindtraderValidator(version="9.9.9").validate_text("part def P;")
+    res = WindtraderClient(version="9.9.9").validate_text("part def P;")
 
     assert res.version == "9.9.9"
     assert res.jar_path == str(FAKE_JAR)
     assert res.duration_s >= 0.0
 
 
-def test_validator_resolves_jar_for_its_own_version(monkeypatch, fake_run):
+def test_client_resolves_jar_for_its_own_version(monkeypatch, fake_run):
     """The configured version is the one handed to `get_jar_path`."""
     seen: list[str] = []
 
@@ -218,30 +270,30 @@ def test_validator_resolves_jar_for_its_own_version(monkeypatch, fake_run):
         seen.append(version)
         return FAKE_JAR
 
-    monkeypatch.setattr(validator_mod, "get_jar_path", _get_jar_path)
+    monkeypatch.setattr(client_mod, "get_jar_path", _get_jar_path)
 
-    WindtraderValidator(version="0.1.1").validate_text("part def P;")
+    WindtraderClient(version="0.1.1").validate_text("part def P;")
 
     assert seen == ["0.1.1"]
 
 
 def test_default_version_matches_module_constant(fake_run):
-    """A default-constructed validator uses `validator.DEFAULT_VERSION`."""
-    assert WindtraderValidator().version == validator_mod.DEFAULT_VERSION
-    assert validator_mod.DEFAULT_VERSION == "0.1.4"
+    """A default-constructed client uses `client.DEFAULT_VERSION`."""
+    assert WindtraderClient().version == client_mod.DEFAULT_VERSION
+    assert client_mod.DEFAULT_VERSION == "0.2.0"
 
 
 def test_timeout_expired_propagates(monkeypatch):
     """A subprocess timeout is raised to the caller rather than swallowed."""
-    monkeypatch.setattr(validator_mod, "get_jar_path", lambda version: FAKE_JAR)
+    monkeypatch.setattr(client_mod, "get_jar_path", lambda version: FAKE_JAR)
 
     def _timeout(*args, **kwargs):
         raise subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs.get("timeout", 0.0))
 
-    monkeypatch.setattr(validator_mod.subprocess, "run", _timeout)
+    monkeypatch.setattr(client_mod.subprocess, "run", _timeout)
 
     with pytest.raises(subprocess.TimeoutExpired):
-        WindtraderValidator().validate_text("part def P;", timeout_s=0.01)
+        WindtraderClient().validate_text("part def P;", timeout_s=0.01)
 
 
 # ---------------------------------------------------------------------------
@@ -250,8 +302,8 @@ def test_timeout_expired_propagates(monkeypatch):
 
 
 def test_validate_method_is_alias_for_validate_text(fake_run):
-    """`WindtraderValidator.validate` delegates to `validate_text`, timeout included."""
-    v = WindtraderValidator()
+    """`WindtraderClient.validate` delegates to `validate_text`, timeout included."""
+    v = WindtraderClient()
     via_alias = v.validate("part def P;", timeout_s=3.0)
     alias_call = fake_run.calls[-1]
 
@@ -270,6 +322,25 @@ def test_module_level_validate_uses_requested_version(fake_run):
     assert res.version == "0.1.1"
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "check"]
     assert fake_run.kwargs["timeout"] == 4.0
+
+
+def test_module_level_export_uses_requested_version_and_json(fake_run):
+    """The module-level `export()` threads version and returns JSON stdout."""
+    fake_run.returncode = 0
+    fake_run.stdout = '[{"@id": "y", "@type": "Package"}]'
+
+    res = client_mod.export("package P;", version="0.1.1", timeout_s=5.0)
+
+    assert res.version == "0.1.1"
+    assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "export"]
+    assert fake_run.kwargs["timeout"] == 5.0
+    assert '{"@id": "y"' in res.stdout
+
+
+def test_module_level_export_default_timeout_matches_client(fake_run):
+    """Module-level `export()` default (120s) stays in lockstep with the method default."""
+    client_mod.export("part def P;")
+    assert fake_run.kwargs["timeout"] == 120.0
 
 
 def test_validate_across_versions_preserves_order(fake_run):
@@ -303,13 +374,15 @@ def test_validate_across_versions_passes_timeout(fake_run):
 def test_package_exports_public_api():
     """`windtrader` re-exports the documented public API."""
     assert set(windtrader.__all__) == {
-        "ValidationResult",
-        "WindtraderValidator",
+        "CommandResult",
+        "WindtraderClient",
+        "echo",
+        "export",
         "validate",
         "validate_across_versions",
     }
     for name in windtrader.__all__:
-        assert getattr(windtrader, name) is getattr(validator_mod, name)
+        assert getattr(windtrader, name) is getattr(client_mod, name)
 
 
 def test_package_version_is_reported():
@@ -320,7 +393,7 @@ def test_package_version_is_reported():
 
 
 def test_default_version_single_sourced():
-    """cli, validator, and _jars all share one DEFAULT_VERSION (regression: PR #2)."""
+    """cli, client, and _jars all share one DEFAULT_VERSION (regression: PR #2)."""
     import windtrader._jars as jars_mod
     import windtrader.cli as cli_mod
 

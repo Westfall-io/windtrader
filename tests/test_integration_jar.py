@@ -23,13 +23,18 @@ import sys
 
 import pytest
 
-from windtrader import WindtraderValidator, cli, validate, validate_across_versions
+from windtrader import WindtraderClient, cli, validate, validate_across_versions
 from windtrader._jars import DEFAULT_VERSION, get_jar_path
 
 pytestmark = pytest.mark.jar
 
 # Generous enough to absorb JVM startup on a cold CI runner; still bounded.
 TIMEOUT_S = 60.0
+
+# Export loads the standard library (~94 files) + resolve/transform; on a cold
+# JVM even a small model takes ~55s (measured). Give the export path real
+# headroom so a shared CI runner does not flake.
+EXPORT_TIMEOUT_S = 120.0
 
 VALID_SOURCES = [
     pytest.param("part { attribute mass; }", id="part-with-attribute"),
@@ -80,8 +85,8 @@ def jar_path(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def validator(jar_path):
-    """A WindtraderValidator bound to the default (pinned) windtrader-java version."""
-    return WindtraderValidator()
+    """A WindtraderClient bound to the default (pinned) windtrader-java version."""
+    return WindtraderClient()
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +222,57 @@ def test_echo_rejects_invalid_source(validator, source):
     assert res.exit_code == 2, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
     assert res.is_invalid_syntax is True
     assert "error:" in res.stderr
+
+
+# ---------------------------------------------------------------------------
+# export: SysMLv2 element JSON graph
+# ---------------------------------------------------------------------------
+
+
+def test_export_valid_source_emits_json_graph(validator):
+    """A valid model is exported as a JSON array of API-shaped elements (exit 0)."""
+    res = validator.export("part def P; part p : P;", timeout_s=EXPORT_TIMEOUT_S)
+
+    assert res.exit_code == 0, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
+    assert res.ok is True
+    assert res.stdout.strip().startswith("["), f"expected JSON array, got: {res.stdout[:200]!r}"
+
+    import json
+
+    graph = json.loads(res.stdout)
+    assert isinstance(graph, list)
+    assert len(graph) > 0
+    # API-shaped elements: top level carries `payload` (with @type) and `identity`
+    # (with @id). (This is the windtrader-java export envelope.)
+    for el in graph:
+        assert "payload" in el
+        assert "@type" in el["payload"]
+        if "identity" in el:
+            assert "@id" in el["identity"]
+    # The corpus (part def + part usage) must produce at least the part usage element.
+    types = {el["payload"].get("@type") for el in graph}
+    assert "PartUsage" in types, f"expected a PartUsage in exported graph, got types={types}"
+
+
+def test_export_invalid_source_exits_two_without_json(validator):
+    """Unparseable input exits 2 and emits no JSON, matching `check`'s invalid contract."""
+    res = validator.export("part { attrib mass; }", timeout_s=EXPORT_TIMEOUT_S)
+
+    assert res.exit_code == 2, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
+    assert res.is_invalid_syntax is True
+    assert res.stdout == ""
+    assert "error:" in res.stderr
+
+
+def test_export_empty_input_emits_graph(validator):
+    """Empty input is a valid (empty) model; the export path should still emit a JSON array."""
+    res = validator.export("", timeout_s=EXPORT_TIMEOUT_S)
+
+    assert res.exit_code == 0, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
+    import json
+
+    graph = json.loads(res.stdout)
+    assert isinstance(graph, list)
 
 
 # ---------------------------------------------------------------------------

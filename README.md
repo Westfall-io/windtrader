@@ -48,15 +48,24 @@ Java **must** be available on your system (CI uses Temurin JDK).
 ## Command-Line Usage
 
 ```bash
-echo "part { attribute mass; }" | windtrader
+echo "part { attribute mass; }" | windtrader           # validate (default: check)
+echo "part { attribute mass; }" | windtrader export     # print element JSON graph
+```
+
+Subcommands:
+
+```text
+check    (default) parse-validate SysML text
+echo     print the normalized/echoed representation
+export   parse SysML and print the SysMLv2 element JSON graph (API shape)
 ```
 
 Options:
 
 ```text
 --version            Show windtrader package version
---java-version       windtrader-java version to use (default: 0.1.4)
---timeout            Validation timeout in seconds
+--java-version       windtrader-java version to use (default: 0.2.0)
+--timeout            Subprocess timeout (default: 10s for check/echo, 120s for export)
 ```
 
 The CLI forwards stdout/stderr directly from the Java tool and exits with the same exit code.
@@ -64,6 +73,19 @@ The CLI forwards stdout/stderr directly from the Java tool and exits with the sa
 ---
 
 ## Python API
+
+> **0.2.0 rename:** `windtrader.validator` (module) / `WindtraderValidator` /
+> `ValidationResult` are now `windtrader.client` / `WindtraderClient` /
+> `CommandResult`. The module drives `check`, `echo`, and now `export`, so the
+> old "validator" name was misleading. Update imports from `windtrader.validator`
+> to `windtrader.client` and the class/type names accordingly.
+>
+> ```python
+> # before (0.1.x)
+> from windtrader.validator import WindtraderValidator, ValidationResult
+> # after (0.2.0)
+> from windtrader.client import WindtraderClient, CommandResult
+> ```
 
 ### Basic validation
 
@@ -78,18 +100,31 @@ else:
     print("Invalid:", result.stderr)
 ```
 
-### Validator object
+### Client object
 
 ```python
-from windtrader.validator import WindtraderValidator
+from windtrader import WindtraderClient
 
-v = WindtraderValidator(version="0.1.4")
-res = v.validate("part { attrib mass; }")
+client = WindtraderClient(version="0.2.0")
+res = client.validate("part { attrib mass; }")
 
 print(res.exit_code)  # 0 = valid, 2 = syntax error, 3 = runtime error
 ```
 
-### ValidationResult
+### Export
+
+```python
+from windtrader import export
+
+res = export("part { attribute mass; }")
+
+if res.ok:
+    print(res.stdout)  # SysMLv2 element JSON graph (array of API-shaped elements)
+else:
+    print("Failed:", res.stderr)
+```
+
+### CommandResult
 
 Returned objects include:
 
@@ -162,4 +197,4 @@ Pull requests welcome. Please ensure:
 
 - CI passes
 - Docstring coverage remains high
-- Validator version bumps are intentional
+- Backend version bumps are intentional
