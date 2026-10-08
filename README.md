@@ -65,7 +65,7 @@ Options:
 ```text
 --version            Show windtrader package version
 --java-version       windtrader-java version to use (default: 0.2.0)
---timeout            Validation timeout in seconds
+--timeout            Subprocess timeout (default: 10s for check/echo, 60s for export)
 ```
 
 The CLI forwards stdout/stderr directly from the Java tool and exits with the same exit code.

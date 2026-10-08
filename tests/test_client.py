@@ -337,6 +337,12 @@ def test_module_level_export_uses_requested_version_and_json(fake_run):
     assert '{"@id": "y"' in res.stdout
 
 
+def test_module_level_export_default_timeout_matches_client(fake_run):
+    """Module-level `export()` default (60s) stays in lockstep with the method default."""
+    client_mod.export("part def P;")
+    assert fake_run.kwargs["timeout"] == 60.0
+
+
 def test_validate_across_versions_preserves_order(fake_run):
     """One result per version, in the same order as the requested sequence."""
     versions = ["0.1.0", "0.1.1", "0.1.2"]

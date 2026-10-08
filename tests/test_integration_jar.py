@@ -31,6 +31,11 @@ pytestmark = pytest.mark.jar
 # Generous enough to absorb JVM startup on a cold CI runner; still bounded.
 TIMEOUT_S = 60.0
 
+# Export loads the standard library (~94 files) + resolve/transform; on a cold
+# JVM even a small model takes ~55s (measured). Give the export path real
+# headroom so a shared CI runner does not flake.
+EXPORT_TIMEOUT_S = 120.0
+
 VALID_SOURCES = [
     pytest.param("part { attribute mass; }", id="part-with-attribute"),
     pytest.param("part def P { attribute m : ScalarValues::Real; }", id="typed-attribute"),
@@ -226,7 +231,7 @@ def test_echo_rejects_invalid_source(validator, source):
 
 def test_export_valid_source_emits_json_graph(validator):
     """A valid model is exported as a JSON array of API-shaped elements (exit 0)."""
-    res = validator.export("part def P; part p : P;", timeout_s=TIMEOUT_S)
+    res = validator.export("part def P; part p : P;", timeout_s=EXPORT_TIMEOUT_S)
 
     assert res.exit_code == 0, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
     assert res.ok is True
@@ -251,7 +256,7 @@ def test_export_valid_source_emits_json_graph(validator):
 
 def test_export_invalid_source_exits_two_without_json(validator):
     """Unparseable input exits 2 and emits no JSON, matching `check`'s invalid contract."""
-    res = validator.export("part { attrib mass; }", timeout_s=TIMEOUT_S)
+    res = validator.export("part { attrib mass; }", timeout_s=EXPORT_TIMEOUT_S)
 
     assert res.exit_code == 2, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
     assert res.is_invalid_syntax is True
@@ -261,7 +266,7 @@ def test_export_invalid_source_exits_two_without_json(validator):
 
 def test_export_empty_input_emits_graph(validator):
     """Empty input is a valid (empty) model; the export path should still emit a JSON array."""
-    res = validator.export("", timeout_s=TIMEOUT_S)
+    res = validator.export("", timeout_s=EXPORT_TIMEOUT_S)
 
     assert res.exit_code == 0, f"unexpected exit {res.exit_code}; stderr={res.stderr!r}"
     import json

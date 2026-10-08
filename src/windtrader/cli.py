@@ -28,7 +28,7 @@ Notes
 -----
 - `--version` prints the Python package version (not the Java backend version).
 - Use `--java-version` to select which `windtrader-java` release asset to download/use.
-- `--timeout` defaults per subcommand: 10s for `check`/`echo`, 30s for `export`
+- `--timeout` defaults per subcommand: 10s for `check`/`echo`, 60s for `export`
   (export loads the standard library and runs resolve/transform).
 - An unknown subcommand is rejected by argparse with exit 2, the same code used
   for invalid SysML. Prefer `check`/`echo`/`export` explicitly in scripts.

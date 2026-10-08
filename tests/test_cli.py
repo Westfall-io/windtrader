@@ -315,7 +315,7 @@ def test_timeout_returns_runtime_error_exit_3(monkeypatch, stdin_text, capsys):
     stdin_text("part def P;")
 
     def _raise_timeout(*args, **kwargs):
-        raise subprocess.TimeoutExpired(cmd=["java"], timeout=30.0)
+        raise subprocess.TimeoutExpired(cmd=["java"], timeout=60.0)
 
     monkeypatch.setattr(cli, "client_export", _raise_timeout)
 
