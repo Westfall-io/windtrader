@@ -1,15 +1,19 @@
-from .validator import (
-    ValidationResult,
-    WindtraderValidator,
+from .client import (
+    CommandResult,
+    WindtraderClient,
+    echo,
+    export,
     validate,
     validate_across_versions,
 )
 
 __all__ = [
-    "ValidationResult",
-    "WindtraderValidator",
+    "CommandResult",
+    "WindtraderClient",
+    "echo",
+    "export",
     "validate",
     "validate_across_versions",
 ]
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"

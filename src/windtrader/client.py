@@ -8,14 +8,14 @@ from dataclasses import dataclass
 from ._jars import DEFAULT_VERSION, get_jar_path
 
 """
-Python wrapper around the `windtrader-java` validator.
+Python client for the `windtrader-java` CLI (check / echo / export).
 
-This module provides a small, stable API for validating SysML v2 text using the
-published `windtrader-java` shaded jar.
+This module provides a small, stable API for driving the published
+`windtrader-java` shaded jar from Python.
 
 Contract with windtrader-java
 -----------------------------
-We rely on the validator jar's CLI behavior:
+We rely on the jar's CLI behavior:
 
 - `java -jar <jar> check`
     Exit code:
@@ -26,12 +26,19 @@ We rely on the validator jar's CLI behavior:
 - `java -jar <jar> echo`
     Prints a normalized/echoed representation when valid (implementation-defined).
 
-These exit codes are intentionally preserved and surfaced to callers via ValidationResult.
+- `java -jar <jar> export`
+    Parses SysML text and prints the SysMLv2 element JSON graph (API shape)
+    to stdout. Exit codes:
+      0 => exported JSON on stdout
+      2 => invalid syntax (no JSON)
+      3 => runtime/tool error (e.g. standard library unavailable)
+
+These exit codes are intentionally preserved and surfaced to callers via CommandResult.
 """
 
 
 @dataclass(frozen=True)
-class ValidationResult:
+class CommandResult:
     """
     Result of invoking `windtrader-java` on a text input.
 
@@ -83,14 +90,14 @@ class ValidationResult:
         return self.exit_code not in (0, 2)
 
 
-class WindtraderValidator:
+class WindtraderClient:
     """
-    Thin wrapper around `windtrader-java`.
+    Thin client around `windtrader-java`.
 
     This class is intentionally small. It:
     - resolves/downloads the correct jar for a given version
     - runs the jar with a bounded timeout
-    - returns captured stdout/stderr + metadata as a ValidationResult
+    - returns captured stdout/stderr + metadata as a CommandResult
     """
 
     def __init__(self, version: str = DEFAULT_VERSION):
@@ -102,7 +109,32 @@ class WindtraderValidator:
         """
         self.version = version
 
-    def validate_text(self, text: str, timeout_s: float = 10.0) -> ValidationResult:
+    def _run(self, subcommand: str, text: str, timeout_s: float) -> CommandResult:
+        """Run the jar with the given subcommand on `text`, returning a CommandResult."""
+        jar = get_jar_path(self.version)
+
+        t0 = time.time()
+        p = subprocess.run(
+            ["java", "-jar", str(jar), subcommand],
+            input=text,
+            text=True,
+            capture_output=True,
+            timeout=timeout_s,
+            check=False,
+        )
+        t1 = time.time()
+
+        return CommandResult(
+            ok=(p.returncode == 0),
+            version=self.version,
+            exit_code=p.returncode,
+            stdout=p.stdout or "",
+            stderr=p.stderr or "",
+            jar_path=str(jar),
+            duration_s=(t1 - t0),
+        )
+
+    def validate_text(self, text: str, timeout_s: float = 10.0) -> CommandResult:
         """
         Validate SysML v2 text using `windtrader-java check`.
 
@@ -115,33 +147,12 @@ class WindtraderValidator:
 
         Returns
         -------
-        ValidationResult
+        CommandResult
             Captures process exit code, stdout, stderr, jar path, and duration.
         """
-        jar = get_jar_path(self.version)
+        return self._run("check", text, timeout_s)
 
-        t0 = time.time()
-        p = subprocess.run(
-            ["java", "-jar", str(jar), "check"],
-            input=text,
-            text=True,
-            capture_output=True,
-            timeout=timeout_s,
-            check=False,
-        )
-        t1 = time.time()
-
-        return ValidationResult(
-            ok=(p.returncode == 0),
-            version=self.version,
-            exit_code=p.returncode,
-            stdout=p.stdout or "",
-            stderr=p.stderr or "",
-            jar_path=str(jar),
-            duration_s=(t1 - t0),
-        )
-
-    def echo(self, text: str, timeout_s: float = 10.0) -> ValidationResult:
+    def echo(self, text: str, timeout_s: float = 10.0) -> CommandResult:
         """
         Run `windtrader-java echo` on SysML v2 text.
 
@@ -157,33 +168,36 @@ class WindtraderValidator:
 
         Returns
         -------
-        ValidationResult
+        CommandResult
             Captures process exit code, stdout, stderr, jar path, and duration.
         """
-        jar = get_jar_path(self.version)
+        return self._run("echo", text, timeout_s)
 
-        t0 = time.time()
-        p = subprocess.run(
-            ["java", "-jar", str(jar), "echo"],
-            input=text,
-            text=True,
-            capture_output=True,
-            timeout=timeout_s,
-            check=False,
-        )
-        t1 = time.time()
+    def export(self, text: str, timeout_s: float = 30.0) -> CommandResult:
+        """
+        Run `windtrader-java export` on SysML v2 text.
 
-        return ValidationResult(
-            ok=(p.returncode == 0),
-            version=self.version,
-            exit_code=p.returncode,
-            stdout=p.stdout or "",
-            stderr=p.stderr or "",
-            jar_path=str(jar),
-            duration_s=(t1 - t0),
-        )
+        On success (exit 0) `stdout` holds the SysMLv2 element JSON graph (an
+        array of API-shaped elements). On invalid input (exit 2) no JSON is
+        emitted and `stderr` carries the parse diagnostics. On runtime failure
+        (exit 3, e.g. standard library unavailable) nothing valid is emitted.
 
-    def validate(self, text: str, timeout_s: float = 10.0) -> ValidationResult:
+        Parameters
+        ----------
+        text:
+            SysML v2 textual syntax to export to its element JSON graph.
+        timeout_s:
+            Subprocess timeout in seconds (default higher than check/echo because
+            export loads the standard library and runs resolve/transform).
+
+        Returns
+        -------
+        CommandResult
+            Captures process exit code, stdout (JSON), stderr, jar path, and duration.
+        """
+        return self._run("export", text, timeout_s)
+
+    def validate(self, text: str, timeout_s: float = 10.0) -> CommandResult:
         """
         Convenience alias for validate_text().
 
@@ -192,11 +206,9 @@ class WindtraderValidator:
         return self.validate_text(text, timeout_s=timeout_s)
 
 
-def validate(
-    text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0
-) -> ValidationResult:
+def validate(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0) -> CommandResult:
     """
-    Validate SysML v2 text in one call without instantiating WindtraderValidator.
+    Validate SysML v2 text in one call without instantiating WindtraderClient.
 
     Parameters
     ----------
@@ -209,17 +221,43 @@ def validate(
 
     Returns
     -------
-    ValidationResult
+    CommandResult
         Captures exit code, stdout, stderr, jar path, and duration.
     """
-    return WindtraderValidator(version=version).validate_text(text, timeout_s=timeout_s)
+    return WindtraderClient(version=version).validate_text(text, timeout_s=timeout_s)
+
+
+def echo(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0) -> CommandResult:
+    """
+    Echo SysML v2 text in one call without instantiating WindtraderClient.
+
+    Returns
+    -------
+    CommandResult
+        Captures exit code, stdout, stderr, jar path, and duration.
+    """
+    return WindtraderClient(version=version).echo(text, timeout_s=timeout_s)
+
+
+def export(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 30.0) -> CommandResult:
+    """
+    Export SysML v2 text to its element JSON graph in one call.
+
+    On success (exit 0) `stdout` holds the SysMLv2 element JSON graph.
+
+    Returns
+    -------
+    CommandResult
+        Captures exit code, stdout (JSON), stderr, jar path, and duration.
+    """
+    return WindtraderClient(version=version).export(text, timeout_s=timeout_s)
 
 
 def validate_across_versions(
     text: str,
     versions: Sequence[str],
     timeout_s: float = 10.0,
-) -> list[ValidationResult]:
+) -> list[CommandResult]:
     """
     Validate the same SysML v2 text against multiple windtrader-java versions.
 
@@ -234,10 +272,10 @@ def validate_across_versions(
 
     Returns
     -------
-    list[ValidationResult]
+    list[CommandResult]
         One result per version, in the same order as `versions`.
     """
-    results: list[ValidationResult] = []
+    results: list[CommandResult] = []
     for v in versions:
         results.append(validate(text, version=v, timeout_s=timeout_s))
     return results

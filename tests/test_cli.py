@@ -15,12 +15,12 @@ import pytest
 
 import windtrader
 from windtrader import cli
-from windtrader.validator import DEFAULT_VERSION, ValidationResult
+from windtrader.client import DEFAULT_VERSION, CommandResult
 
 
-def _result(exit_code: int = 0, stdout: str = "", stderr: str = "") -> ValidationResult:
-    """Build a ValidationResult standing in for one jar invocation."""
-    return ValidationResult(
+def _result(exit_code: int = 0, stdout: str = "", stderr: str = "") -> CommandResult:
+    """Build a CommandResult standing in for one jar invocation."""
+    return CommandResult(
         ok=exit_code == 0,
         version="0.1.2",
         exit_code=exit_code,
@@ -64,6 +64,26 @@ def stdin_text(monkeypatch):
         monkeypatch.setattr(sys, "stdin", io.StringIO(text))
 
     return _set
+
+
+@pytest.fixture
+def fake_export(monkeypatch):
+    """Replace `cli.client_export` with a recorder for export-subcommand tests."""
+
+    class Recorder:
+        """Captures export() calls made by the CLI and returns a canned result."""
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[tuple, dict]] = []
+            self.result = _result(0)
+
+        def __call__(self, *args, **kwargs):
+            self.calls.append((args, kwargs))
+            return self.result
+
+    recorder = Recorder()
+    monkeypatch.setattr(cli, "client_export", recorder)
+    return recorder
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +171,74 @@ def test_exit_code_is_an_int(fake_validate, stdin_text):
 
     assert isinstance(rc, int)
     assert rc == 2
+
+
+# ---------------------------------------------------------------------------
+# export subcommand
+# ---------------------------------------------------------------------------
+
+
+def test_export_subcommand_runs_export_on_stdin(fake_export, stdin_text):
+    """`windtrader export` calls `client_export` with the stdin text."""
+    stdin_text("part def P;")
+
+    cli.main(["export"])
+
+    assert len(fake_export.calls) == 1
+    assert fake_export.calls[0][0][0] == "part def P;"
+
+
+def test_export_subcommand_forwards_defaults(fake_export, stdin_text):
+    """`export` uses the shared DEFAULT_VERSION and the default timeout."""
+    stdin_text("part def P;")
+
+    cli.main(["export"])
+
+    kwargs = fake_export.calls[0][1]
+    assert kwargs["version"] == DEFAULT_VERSION
+    assert kwargs["timeout_s"] == 10.0
+
+
+def test_export_subcommand_accepts_java_version_and_timeout(fake_export, stdin_text):
+    """`export` honors `--java-version` and `--timeout`."""
+    stdin_text("part def P;")
+
+    cli.main(["export", "--java-version", "0.1.1", "--timeout", "5.0"])
+
+    kwargs = fake_export.calls[0][1]
+    assert kwargs["version"] == "0.1.1"
+    assert kwargs["timeout_s"] == 5.0
+
+
+def test_export_subcommand_forwards_exit_code(fake_export, stdin_text):
+    """`windtrader export` returns the jar's exit code (0 valid, 2 invalid, 3 runtime)."""
+    for code in (0, 2, 3):
+        stdin_text("part def P;")
+        fake_export.result = _result(code)
+        assert cli.main(["export"]) == code
+
+
+def test_export_subcommand_forwards_json_stdout(fake_export, stdin_text, capsys):
+    """JSON from a successful export is written to stdout verbatim."""
+    stdin_text("part def P;")
+    fake_export.result = _result(0, stdout='[{"@id": "x", "@type": "PartUsage"}]')
+
+    cli.main(["export"])
+
+    captured = capsys.readouterr()
+    assert captured.out == '[{"@id": "x", "@type": "PartUsage"}]\n'
+
+
+def test_export_subcommand_forwards_stderr(fake_export, stdin_text, capsys):
+    """Export diagnostics (e.g. parse errors) land on stderr verbatim."""
+    stdin_text("not sysml")
+    fake_export.result = _result(2, stdout="", stderr="error: line=1 offset=3 near=not")
+
+    cli.main(["export"])
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "error: line=1 offset=3 near=not\n"
 
 
 # ---------------------------------------------------------------------------

@@ -48,14 +48,23 @@ Java **must** be available on your system (CI uses Temurin JDK).
 ## Command-Line Usage
 
 ```bash
-echo "part { attribute mass; }" | windtrader
+echo "part { attribute mass; }" | windtrader           # validate (default: check)
+echo "part { attribute mass; }" | windtrader export     # print element JSON graph
+```
+
+Subcommands:
+
+```text
+check    (default) parse-validate SysML text
+echo     print the normalized/echoed representation
+export   parse SysML and print the SysMLv2 element JSON graph (API shape)
 ```
 
 Options:
 
 ```text
 --version            Show windtrader package version
---java-version       windtrader-java version to use (default: 0.1.4)
+--java-version       windtrader-java version to use (default: 0.2.0)
 --timeout            Validation timeout in seconds
 ```
 
@@ -78,18 +87,31 @@ else:
     print("Invalid:", result.stderr)
 ```
 
-### Validator object
+### Client object
 
 ```python
-from windtrader.validator import WindtraderValidator
+from windtrader import WindtraderClient
 
-v = WindtraderValidator(version="0.1.4")
+v = WindtraderClient(version="0.2.0")
 res = v.validate("part { attrib mass; }")
 
 print(res.exit_code)  # 0 = valid, 2 = syntax error, 3 = runtime error
 ```
 
-### ValidationResult
+### Export
+
+```python
+from windtrader import export
+
+res = export("part { attribute mass; }")
+
+if res.ok:
+    print(res.stdout)  # SysMLv2 element JSON graph (array of API-shaped elements)
+else:
+    print("Failed:", res.stderr)
+```
+
+### CommandResult
 
 Returned objects include:
 
