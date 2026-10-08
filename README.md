@@ -105,8 +105,8 @@ else:
 ```python
 from windtrader import WindtraderClient
 
-v = WindtraderClient(version="0.2.0")
-res = v.validate("part { attrib mass; }")
+client = WindtraderClient(version="0.2.0")
+res = client.validate("part { attrib mass; }")
 
 print(res.exit_code)  # 0 = valid, 2 = syntax error, 3 = runtime error
 ```
@@ -197,4 +197,4 @@ Pull requests welcome. Please ensure:
 
 - CI passes
 - Docstring coverage remains high
-- Validator version bumps are intentional
+- Backend version bumps are intentional
