@@ -215,9 +215,9 @@ def test_echo_passes_timeout_through(fake_run):
 
 
 def test_export_uses_longer_default_timeout(fake_run):
-    """`export` defaults to a 60s timeout (library load + resolve/transform)."""
+    """`export` defaults to a 120s timeout (library load + resolve/transform)."""
     WindtraderClient().export("part def P;")
-    assert fake_run.kwargs["timeout"] == 60.0
+    assert fake_run.kwargs["timeout"] == 120.0
 
 
 def test_export_passes_timeout_through(fake_run):
@@ -338,9 +338,9 @@ def test_module_level_export_uses_requested_version_and_json(fake_run):
 
 
 def test_module_level_export_default_timeout_matches_client(fake_run):
-    """Module-level `export()` default (60s) stays in lockstep with the method default."""
+    """Module-level `export()` default (120s) stays in lockstep with the method default."""
     client_mod.export("part def P;")
-    assert fake_run.kwargs["timeout"] == 60.0
+    assert fake_run.kwargs["timeout"] == 120.0
 
 
 def test_validate_across_versions_preserves_order(fake_run):

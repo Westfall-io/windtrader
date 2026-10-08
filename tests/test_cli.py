@@ -210,14 +210,14 @@ def test_export_subcommand_runs_export_on_stdin(fake_export, stdin_text):
 
 
 def test_export_subcommand_forwards_defaults(fake_export, stdin_text):
-    """`export` uses the shared DEFAULT_VERSION and a 60s default timeout."""
+    """`export` uses the shared DEFAULT_VERSION and a 120s default timeout."""
     stdin_text("part def P;")
 
     cli.main(["export"])
 
     kwargs = fake_export.calls[0][1]
     assert kwargs["version"] == DEFAULT_VERSION
-    assert kwargs["timeout_s"] == 60.0
+    assert kwargs["timeout_s"] == 120.0
 
 
 def test_check_subcommand_uses_ten_second_default(fake_validate, stdin_text):
@@ -315,7 +315,7 @@ def test_timeout_returns_runtime_error_exit_3(monkeypatch, stdin_text, capsys):
     stdin_text("part def P;")
 
     def _raise_timeout(*args, **kwargs):
-        raise subprocess.TimeoutExpired(cmd=["java"], timeout=60.0)
+        raise subprocess.TimeoutExpired(cmd=["java"], timeout=120.0)
 
     monkeypatch.setattr(cli, "client_export", _raise_timeout)
 

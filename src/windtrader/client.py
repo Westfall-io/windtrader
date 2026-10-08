@@ -1,3 +1,20 @@
+"""
+Python client for the `windtrader-java` CLI (check / echo / export).
+
+This module provides a small, stable API for driving the published
+`windtrader-java` shaded jar from Python. Each function runs the jar as an
+external black-box subprocess (`java -jar <jar> <subcommand>`) and captures
+its stdout/stderr/exit code; the jar is never imported or embedded.
+
+Subcommands and exit codes (as defined by windtrader-java)
+----------------------------------------------------------
+- `check`:  parse-only validation. 0 valid, 2 invalid, 3 runtime failure.
+- `echo`:   print a normalized/echoed representation when valid (implementation-defined).
+- `export`: parse SysML and print the SysMLv2 element JSON graph (API shape).
+
+The Python API mirrors these exactly: `validate`/`check`, `echo`, `export`.
+"""
+
 from __future__ import annotations
 
 import subprocess
@@ -6,35 +23,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from ._jars import DEFAULT_VERSION, get_jar_path
-
-"""
-Python client for the `windtrader-java` CLI (check / echo / export).
-
-This module provides a small, stable API for driving the published
-`windtrader-java` shaded jar from Python.
-
-Contract with windtrader-java
------------------------------
-We rely on the jar's CLI behavior:
-
-- `java -jar <jar> check`
-    Exit code:
-      0 => syntax valid
-      2 => syntax invalid (parse error)
-      3 => runtime/tool error (or other non-parse failures)
-
-- `java -jar <jar> echo`
-    Prints a normalized/echoed representation when valid (implementation-defined).
-
-- `java -jar <jar> export`
-    Parses SysML text and prints the SysMLv2 element JSON graph (API shape)
-    to stdout. Exit codes:
-      0 => exported JSON on stdout
-      2 => invalid syntax (no JSON)
-      3 => runtime/tool error (e.g. standard library unavailable)
-
-These exit codes are intentionally preserved and surfaced to callers via CommandResult.
-"""
 
 
 @dataclass(frozen=True)
@@ -173,7 +161,7 @@ class WindtraderClient:
         """
         return self._run("echo", text, timeout_s)
 
-    def export(self, text: str, timeout_s: float = 60.0) -> CommandResult:
+    def export(self, text: str, timeout_s: float = 120.0) -> CommandResult:
         """
         Run `windtrader-java export` on SysML v2 text.
 
@@ -189,7 +177,8 @@ class WindtraderClient:
         timeout_s:
             Subprocess timeout in seconds (default higher than check/echo because
             export loads the standard library and runs resolve/transform, which
-            can take ~55s on a cold JVM even for small models).
+            can take ~55s on a cold JVM even for small models; 120s leaves headroom
+            for a loaded machine or cold CI runner).
 
         Returns
         -------
@@ -240,7 +229,7 @@ def echo(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 10.0) -> 
     return WindtraderClient(version=version).echo(text, timeout_s=timeout_s)
 
 
-def export(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 60.0) -> CommandResult:
+def export(text: str, version: str = DEFAULT_VERSION, timeout_s: float = 120.0) -> CommandResult:
     """
     Export SysML v2 text to its element JSON graph in one call.
 

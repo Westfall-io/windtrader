@@ -28,7 +28,7 @@ Notes
 -----
 - `--version` prints the Python package version (not the Java backend version).
 - Use `--java-version` to select which `windtrader-java` release asset to download/use.
-- `--timeout` defaults per subcommand: 10s for `check`/`echo`, 60s for `export`
+- `--timeout` defaults per subcommand: 10s for `check`/`echo`, 120s for `export`
   (export loads the standard library and runs resolve/transform).
 - An unknown subcommand is rejected by argparse with exit 2, the same code used
   for invalid SysML. Prefer `check`/`echo`/`export` explicitly in scripts.
@@ -49,7 +49,7 @@ from .client import validate
 _SUBCOMMAND_DEFAULT_TIMEOUT = {
     "check": 10.0,
     "echo": 10.0,
-    "export": 60.0,
+    "export": 120.0,
 }
 
 
@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="timeout in seconds for the Java subprocess "
-        "(default: 10s for check/echo, 60s for export)",
+        "(default: 10s for check/echo, 120s for export)",
     )
 
     args = p.parse_args(argv)

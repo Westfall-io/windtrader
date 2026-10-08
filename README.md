@@ -65,7 +65,7 @@ Options:
 ```text
 --version            Show windtrader package version
 --java-version       windtrader-java version to use (default: 0.2.0)
---timeout            Subprocess timeout (default: 10s for check/echo, 60s for export)
+--timeout            Subprocess timeout (default: 10s for check/echo, 120s for export)
 ```
 
 The CLI forwards stdout/stderr directly from the Java tool and exits with the same exit code.
@@ -73,6 +73,19 @@ The CLI forwards stdout/stderr directly from the Java tool and exits with the sa
 ---
 
 ## Python API
+
+> **0.2.0 rename:** `windtrader.validator` (module) / `WindtraderValidator` /
+> `ValidationResult` are now `windtrader.client` / `WindtraderClient` /
+> `CommandResult`. The module drives `check`, `echo`, and now `export`, so the
+> old "validator" name was misleading. Update imports from `windtrader.validator`
+> to `windtrader.client` and the class/type names accordingly.
+>
+> ```python
+> # before (0.1.x)
+> from windtrader.validator import WindtraderValidator, ValidationResult
+> # after (0.2.0)
+> from windtrader.client import WindtraderClient, CommandResult
+> ```
 
 ### Basic validation
 
