@@ -2,6 +2,13 @@
 
 <!-- version list -->
 
+## v0.2.1 (2026-10-16)
+
+### 🚀 Features
+
+- 📦 Add PyPI publish workflow (tag-triggered, `PYPI_TOKEN`)
+- 📦 Rename PyPI distribution to `sysml-windtrader` (import stays `windtrader`)
+
 ## v0.2.0 (2026-10-08)
 
 ### Other
