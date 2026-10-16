@@ -389,7 +389,7 @@ def test_package_version_is_reported():
     """The package __version__ matches the distribution metadata."""
     import importlib.metadata
 
-    assert windtrader.__version__ == importlib.metadata.version("windtrader")
+    assert windtrader.__version__ == importlib.metadata.version("sysml-windtrader")
 
 
 def test_default_version_single_sourced():

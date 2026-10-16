@@ -32,7 +32,7 @@ This project is intentionally *parse-only*: it validates syntax, reports diagnos
 ## Installation
 
 ```bash
-pip install windtrader
+pip install sysml-windtrader
 ```
 
 Or for development:
