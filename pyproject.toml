@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "windtrader"
+name = "sysml-windtrader"
 version = "0.2.0"
 description = "Python wrapper around windtrader-java for SysML v2 parse-only validation."
 readme = "README.md"
@@ -50,6 +50,12 @@ output = "coverage.xml"
 
 [project.scripts]
 windtrader = "windtrader.cli:main"
+
+# Distribution name is sysml-windtrader (PyPI), but the import package remains
+# windtrader — hatchling's default wheel heuristic matches project name to a
+# directory, so pin the package explicitly (else the wheel build fails).
+[tool.hatch.build.targets.wheel]
+packages = ["src/windtrader"]
 
 # -------------------------
 # ruff (format + lint)
