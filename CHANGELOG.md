@@ -2,6 +2,13 @@
 
 <!-- version list -->
 
+## v0.2.2 (2026-10-17)
+
+### 🐛 Bug Fixes
+
+- Single-source `__version__` from dist metadata (hardcoded 0.2.0 drifted from
+  the 0.2.1 dist; CLI `--version` reported the wrong version)
+
 ## v0.2.1 (2026-10-16)
 
 ### 🚀 Features
