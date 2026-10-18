@@ -2,6 +2,13 @@
 
 <!-- version list -->
 
+## v0.2.3 (2026-10-17)
+
+### 📝 Documentation
+
+- README: reflect `sysml-windtrader` distribution name; document
+  `validate_across_versions` with its real signature
+
 ## v0.2.2 (2026-10-17)
 
 ### 🐛 Bug Fixes
