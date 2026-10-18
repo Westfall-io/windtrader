@@ -1,6 +1,7 @@
-# windtrader
+# sysml-windtrader
 
-**windtrader** is a lightweight Python wrapper around the `windtrader-java` SysML v2 validator.
+**sysml-windtrader** (`windtrader` on import) is a lightweight Python wrapper around the
+`windtrader-java` SysML v2 validator.
 It provides a simple, scriptable way to validate SysML v2 textual syntax from Python while
 delegating all grammar authority to the official Java-based validator.
 
@@ -122,6 +123,18 @@ if res.ok:
     print(res.stdout)  # SysMLv2 element JSON graph (array of API-shaped elements)
 else:
     print("Failed:", res.stderr)
+```
+
+### Validate across versions
+
+```python
+from windtrader import validate_across_versions
+
+results = validate_across_versions("part { attribute mass; }", versions=["0.2.0"])
+
+# One CommandResult per version, in the order given.
+for r in results:
+    print(r.version, "->", "valid" if r.ok else "invalid")
 ```
 
 ### CommandResult
