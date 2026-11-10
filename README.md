@@ -42,7 +42,11 @@ Or for development:
 pip install -e ".[dev]"
 ```
 
-Java **must** be available on your system (CI uses Temurin JDK).
+**Java requirement:** the default `windtrader-java` release (0.2.x) is compiled for
+**Java 21** (class file version 65). Java **21 or newer** must be available on your
+system (CI uses Temurin JDK 21). If your default `java` is older, point the wrapper at a
+Java 21+ JVM via `WINDTRADER_JAVA` (explicit executable path) or `JAVA_HOME` — see
+[Configuration](#configuration).
 
 ---
 
@@ -161,7 +165,14 @@ The Java validator defines:
 | 2         | Invalid SysML      |
 | 3         | Runtime error      |
 
-Python preserves these codes exactly.
+Python preserves these codes exactly. Any process exit code **outside** (0, 2, 3) —
+for example the JVM's own startup failure code (1) when an old Java hits a
+Java-21-compiled JAR — is normalized to **3** (runtime error), so the contract never
+leaks a foreign code. The underlying JVM detail is kept on `stderr` (e.g.
+`UnsupportedClassVersionError ... class file version 65.0 ... only recognizes ... 62.0`).
+
+In the Python API, `CommandResult.exit_code` is always one of 0/2/3; `is_invalid_syntax`
+is `exit_code == 2` and `is_runtime_error` is `exit_code not in (0, 2)` (i.e. 3).
 
 ---
 
@@ -172,6 +183,13 @@ Environment variables:
 - `WINDTRADER_CACHE_DIR` – override JAR cache directory
 - `WINDTRADER_JAVA_REPO` – override GitHub repo for JAR downloads
 - `WINDTRADER_JAVA_STABLE_ASSET` – explicit asset URL (optional)
+- `WINDTRADER_JAVA` – explicit path to a `java` executable (or a JVM launcher) to use
+  instead of `java` on PATH. Handy on machines whose default Java is too old for the
+  target JAR — set it to a Java 21+ executable.
+- `JAVA_HOME` – if set (and `WINDTRADER_JAVA` is not), the wrapper uses
+  `<JAVA_HOME>/bin/java` as the Java executable.
+
+Java executable resolution order: `WINDTRADER_JAVA` → `JAVA_HOME/bin/java` → `java` on PATH.
 
 ---
 

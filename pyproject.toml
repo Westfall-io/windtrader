@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sysml-windtrader"
-version = "0.2.3"
-description = "Python wrapper around windtrader-java for SysML v2 parse-only validation."
+version = "0.2.4"
+description = "Python wrapper around windtrader-java for SysML v2 parse-only validation (requires Java 21+)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }

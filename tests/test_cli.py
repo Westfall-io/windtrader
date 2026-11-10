@@ -174,13 +174,17 @@ def test_invalid_timeout_flag_exits_with_usage_error(fake_validate, stdin_text):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("exit_code", [0, 2, 3, 1, 42])
-def test_forwards_jar_exit_code(fake_validate, stdin_text, exit_code):
-    """`main()` returns exactly the exit code reported by the jar."""
+@pytest.mark.parametrize("exit_code,expected", [(0, 0), (2, 2), (3, 3), (1, 3), (42, 3)])
+def test_forwards_jar_exit_code(fake_validate, stdin_text, exit_code, expected):
+    """`main()` returns the jar's exit code, normalized to the 0/2/3 contract.
+
+    Codes inside the contract (0/2/3) pass through exactly; any foreign code (e.g. 1
+    from a JVM startup failure) is mapped to 3 (runtime error).
+    """
     stdin_text("part def P;")
     fake_validate.result = _result(exit_code)
 
-    assert cli.main([]) == exit_code
+    assert cli.main([]) == expected
 
 
 def test_exit_code_is_an_int(fake_validate, stdin_text):

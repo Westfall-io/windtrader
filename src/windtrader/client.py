@@ -17,12 +17,37 @@ The Python API mirrors these exactly: `validate`/`check`, `echo`, `export`.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from ._jars import DEFAULT_VERSION, get_jar_path
+
+
+def _resolve_java() -> list[str]:
+    """
+    Return the argv prefix for the Java executable (allows an override).
+
+    Resolution order:
+    1. ``WINDTRADER_JAVA`` env var — explicit path to a ``java`` (or JVM) executable.
+    2. ``JAVA_HOME`` env var — ``<JAVA_HOME>/bin/java``.
+    3. ``java`` on PATH (default).
+
+    This lets users on a machine whose default ``java`` is too old point the wrapper
+    at a newer JVM without modifying PATH.
+    """
+    explicit = os.environ.get("WINDTRADER_JAVA", "").strip()
+    if explicit:
+        return [explicit]
+
+    java_home = os.environ.get("JAVA_HOME", "").strip()
+    if java_home:
+        return [str(Path(java_home) / "bin" / "java")]
+
+    return ["java"]
 
 
 @dataclass(frozen=True)
@@ -37,7 +62,12 @@ class CommandResult:
     version:
         windtrader-java version string used to resolve/download the jar.
     exit_code:
-        Process exit code returned by the jar.
+        Process exit code, normalized to the documented contract (0 / 2 / 3).
+        Any exit code outside (0, 2, 3) is mapped to 3 (runtime error), because a
+        JVM-level startup failure (e.g. an old JRE hitting a Java-21 jar ->
+        UnsupportedClassVersionError) returns a foreign code like 1 that would
+        otherwise break the documented 0/2/3 contract. The underlying detail is
+        preserved in `stderr`.
     stdout:
         Captured standard output from the jar.
     stderr:
@@ -55,6 +85,14 @@ class CommandResult:
     stderr: str
     jar_path: str
     duration_s: float
+
+    def __post_init__(self) -> None:
+        # Normalize any process exit code outside the documented 0/2/3 contract to
+        # 3 (runtime error). See the `exit_code` docstring for why. Recompute `ok`
+        # from the normalized code so the two can never disagree.
+        if self.exit_code not in (0, 2, 3):
+            object.__setattr__(self, "exit_code", 3)
+        object.__setattr__(self, "ok", self.exit_code == 0)
 
     @property
     def is_invalid_syntax(self) -> bool:
@@ -103,7 +141,7 @@ class WindtraderClient:
 
         t0 = time.time()
         p = subprocess.run(
-            ["java", "-jar", str(jar), subcommand],
+            [*_resolve_java(), "-jar", str(jar), subcommand],
             input=text,
             text=True,
             capture_output=True,

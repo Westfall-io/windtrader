@@ -110,13 +110,25 @@ def test_parse_error_result_flags():
     assert res.is_runtime_error is False
 
 
-@pytest.mark.parametrize("exit_code", [1, 3, 127, -9])
-def test_runtime_error_result_flags(exit_code):
-    """Any exit code outside (0, 2) is surfaced as a runtime/tool error."""
+@pytest.mark.parametrize("exit_code", [1, 127, -9, 42, 137])
+def test_runtime_error_result_flags_normalized(exit_code):
+    """Any exit code outside (0, 2, 3) surfaces as is_runtime_error AND is normalized to 3."""
     res = _result(exit_code)
     assert res.ok is False
     assert res.is_invalid_syntax is False
     assert res.is_runtime_error is True
+    # Normalization keeps the documented 0/2/3 contract (regression: a JVM startup
+    # failure like an old JRE hitting a Java-21 jar leaks code 1).
+    assert res.exit_code == 3
+
+
+def test_exit_code_3_is_runtime_error_not_normalized():
+    """3 is already inside the contract and stays 3."""
+    res = _result(3)
+    assert res.exit_code == 3
+    assert res.ok is False
+    assert res.is_runtime_error is True
+    assert res.is_invalid_syntax is False
 
 
 def test_validation_result_is_frozen():
@@ -132,10 +144,56 @@ def test_validation_result_is_frozen():
 
 
 def test_validate_text_builds_exact_check_argv(fake_run):
-    """`check` is invoked as exactly [\"java\", \"-jar\", <jar>, \"check\"]."""
+    """`check` is invoked as exactly [\"java\", \"-jar\", <jar>, \"check\"] by default."""
     WindtraderClient().validate_text("part { attribute mass; }")
 
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "check"]
+
+
+def test_java_executable_resolution_defaults_to_java(fake_run, monkeypatch):
+    """With no WINDTRADER_JAVA / JAVA_HOME, the argv prefix is plain `java`."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.delenv("JAVA_HOME", raising=False)
+
+    WindtraderClient().validate_text("part def P;")
+    assert fake_run.argv[0] == "java"
+
+
+def test_java_executable_resolution_uses_java_home(fake_run, monkeypatch):
+    """`JAVA_HOME` is used as `<JAVA_HOME>/bin/java` when WINDTRADER_JAVA is absent."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.setenv("JAVA_HOME", "/opt/jdk21")
+
+    WindtraderClient().validate_text("part def P;")
+    assert fake_run.argv[0] == "/opt/jdk21/bin/java"
+
+
+def test_java_executable_resolution_prefers_windtrader_java(fake_run, monkeypatch):
+    """`WINDTRADER_JAVA` (explicit path) wins over JAVA_HOME."""
+    monkeypatch.setenv("WINDTRADER_JAVA", "/custom/bin/java21")
+    monkeypatch.setenv("JAVA_HOME", "/opt/jdk-not-used")
+
+    WindtraderClient().validate_text("part def P;")
+    assert fake_run.argv[0] == "/custom/bin/java21"
+
+
+def test_jvm_startup_failure_normalized_and_stderr_preserved(fake_run):
+    """A JVM startup failure (rc=1, e.g. old Java vs Java-21 jar) -> 3, stderr kept."""
+    fake_run.returncode = 1
+    fake_run.stdout = ""
+    fake_run.stderr = (
+        "Error: LinkageError occurred while loading main class "
+        "io.westfall.windtrader.RoundTrip\n\tjava.lang.UnsupportedClassVersionError: "
+        "class file version 65.0 ... only recognizes class file versions up to 62.0"
+    )
+
+    res = WindtraderClient().validate_text("part { attribute mass; }")
+
+    assert res.exit_code == 3
+    assert res.is_runtime_error is True
+    assert res.is_invalid_syntax is False
+    assert res.ok is False
+    assert "UnsupportedClassVersionError" in res.stderr
 
 
 def test_echo_builds_exact_echo_argv(fake_run):

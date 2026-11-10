@@ -22,12 +22,15 @@ Exit codes (as defined by windtrader-java)
 - 0: Valid SysML (parse succeeded)
 - 2: Invalid SysML (syntax/parse error)
 - 3: Runtime error (tool failure)
-- Any other non-zero: Unexpected failure
+- Any other non-zero: mapped to 3 (runtime error)
 
 Notes
 -----
 - `--version` prints the Python package version (not the Java backend version).
 - Use `--java-version` to select which `windtrader-java` release asset to download/use.
+- The Java executable is resolved via `WINDTRADER_JAVA` (explicit path) →
+  `JAVA_HOME/bin/java` → `java` on PATH. Point `WINDTRADER_JAVA` at a Java 21+ JVM
+  if your default `java` is too old to load the default `windtrader-java` JAR.
 - `--timeout` defaults per subcommand: 10s for `check`/`echo`, 120s for `export`
   (export loads the standard library and runs resolve/transform).
 - An unknown subcommand is rejected by argparse with exit 2, the same code used

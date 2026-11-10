@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.2.4 (2026-10-17)
+
+### 🐛 Bug Fixes
+
+- Normalize any process exit code outside the documented 0/2/3 contract to **3**
+  (runtime error) in `CommandResult` (and thus the CLI). A JVM startup failure on an
+  old JRE (e.g. `UnsupportedClassVersionError` hitting the Java-21-compiled
+  `windtrader-java` 0.2.0 JAR) previously leaked a foreign code like **1**, breaking
+  the contract and making `is_runtime_error` (and CLI exit-code branching) miss the
+  case. The underlying JVM detail is preserved on `stderr`.
+- Add a Java-executable override so users with an old default `java` can point the
+  wrapper at a Java 21+ JVM: `WINDTRADER_JAVA` (explicit path) → `JAVA_HOME/bin/java`
+  → `java` on PATH.
+
+### 📝 Documentation
+
+- README: state the **Java 21+** requirement in Installation; document the exit-code
+  normalization and the Java-executable resolution order in Exit Code Contract and
+  Configuration.
+- pyproject description: note "requires Java 21+".
+
 ## v0.2.3 (2026-10-17)
 
 ### 📝 Documentation
