@@ -143,8 +143,10 @@ def test_validation_result_is_frozen():
 # ---------------------------------------------------------------------------
 
 
-def test_validate_text_builds_exact_check_argv(fake_run):
-    """`check` is invoked as exactly [\"java\", \"-jar\", <jar>, \"check\"] by default."""
+def test_validate_text_builds_exact_check_argv(fake_run, monkeypatch):
+    """With no JAVA override env, `check` is invoked as exactly [\"java\", \"-jar\", <jar>, \"check\"]."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.delenv("JAVA_HOME", raising=False)
     WindtraderClient().validate_text("part { attribute mass; }")
 
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "check"]
@@ -196,15 +198,19 @@ def test_jvm_startup_failure_normalized_and_stderr_preserved(fake_run):
     assert "UnsupportedClassVersionError" in res.stderr
 
 
-def test_echo_builds_exact_echo_argv(fake_run):
-    """`echo` is invoked as exactly [\"java\", \"-jar\", <jar>, \"echo\"]."""
+def test_echo_builds_exact_echo_argv(fake_run, monkeypatch):
+    """With no JAVA override env, `echo` is invoked as exactly [\"java\", \"-jar\", <jar>, \"echo\"]."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.delenv("JAVA_HOME", raising=False)
     WindtraderClient().echo("part { attribute mass; }")
 
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "echo"]
 
 
-def test_export_builds_exact_export_argv(fake_run):
-    """`export` is invoked as exactly [\"java\", \"-jar\", <jar>, \"export\"]."""
+def test_export_builds_exact_export_argv(fake_run, monkeypatch):
+    """With no JAVA override env, `export` is invoked as exactly [\"java\", \"-jar\", <jar>, \"export\"]."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.delenv("JAVA_HOME", raising=False)
     WindtraderClient().export("part { attribute mass; }")
 
     assert fake_run.argv == ["java", "-jar", str(FAKE_JAR), "export"]
@@ -373,8 +379,10 @@ def test_validate_method_is_alias_for_validate_text(fake_run):
     assert via_alias.exit_code == via_direct.exit_code
 
 
-def test_module_level_validate_uses_requested_version(fake_run):
+def test_module_level_validate_uses_requested_version(fake_run, monkeypatch):
     """The module-level `validate()` threads version and timeout to the subprocess call."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.delenv("JAVA_HOME", raising=False)
     res = validate("part def P;", version="0.1.1", timeout_s=4.0)
 
     assert res.version == "0.1.1"
@@ -382,8 +390,10 @@ def test_module_level_validate_uses_requested_version(fake_run):
     assert fake_run.kwargs["timeout"] == 4.0
 
 
-def test_module_level_export_uses_requested_version_and_json(fake_run):
+def test_module_level_export_uses_requested_version_and_json(fake_run, monkeypatch):
     """The module-level `export()` threads version and returns JSON stdout."""
+    monkeypatch.delenv("WINDTRADER_JAVA", raising=False)
+    monkeypatch.delenv("JAVA_HOME", raising=False)
     fake_run.returncode = 0
     fake_run.stdout = '[{"@id": "y", "@type": "Package"}]'
 
