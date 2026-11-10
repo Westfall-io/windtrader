@@ -21,7 +21,8 @@ __all__ = [
 # while the dist was 0.2.1 broke test_package_version_is_reported and the CLI
 # --version). When not installed (e.g. a bare source checkout), fall back to a
 # placeholder so importing windtrader never raises.
-from importlib.metadata import PackageNotFoundError, version as _dist_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _dist_version
 
 try:
     __version__ = _dist_version("sysml-windtrader")
